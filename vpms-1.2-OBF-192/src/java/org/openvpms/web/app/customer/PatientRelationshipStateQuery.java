@@ -110,8 +110,8 @@ class PatientRelationshipStateQuery extends RelationshipStateQuery {
             Map<Long, PatientRelationshipState> patients
                     = new HashMap<Long, PatientRelationshipState>();
             for (RelationshipState state : states.values()) {
-                long uid = (parentIsSource()) ? state.getTargetUID()
-                        : state.getSourceUID();
+                long uid = (parentIsSource()) ? state.getTargetId()
+                        : state.getSourceId();
                 patients.put(uid, (PatientRelationshipState) state);
             }
 

@@ -108,7 +108,7 @@ public abstract class IMTableCollectionViewer<T>
         context.setComponentFactory(new TableComponentFactory(context));
 
         // filter out the uid (aka "id") field
-        NodeFilter idFilter = new NamedNodeFilter("uid");
+        NodeFilter idFilter = new NamedNodeFilter("id");
         NodeFilter filter = FilterHelper.chain(
                 idFilter, this.context.getDefaultNodeFilter());
         context.setNodeFilter(filter);

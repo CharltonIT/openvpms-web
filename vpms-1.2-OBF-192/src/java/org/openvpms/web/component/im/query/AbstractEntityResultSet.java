@@ -135,7 +135,7 @@ public abstract class AbstractEntityResultSet<T> extends NameResultSet<T> {
     protected void addSortConstraints(ArchetypeQuery query) {
         super.addSortConstraints(query);
         String alias = getArchetypes().getAlias();
-        query.add(new NodeSortConstraint(alias, "uid"));
+        query.add(new NodeSortConstraint(alias, "id"));
     }
 
 }
