@@ -209,7 +209,7 @@ public class RelationshipStateQuery {
             Iterator<ObjectSet> iter = new ObjectSetQueryIterator(query);
             while (iter.hasNext()) {
                 ObjectSet set = iter.next();
-                long relId = (Long) set.get("rel.id");
+                long relId = set.getLong("rel.id");
                 long id = set.getLong(secondaryIdNode);
                 String name = set.getString(secondaryNameNode);
                 String description = set.getString(secondaryDescNode);

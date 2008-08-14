@@ -145,7 +145,7 @@ public abstract class IMTableCollectionEditor<T>
         // don't want to increase the depth for this context
         context.setLayoutDepth(context.getLayoutDepth() - 1);
 
-        // filter out the uid (aka "id") field
+        // filter out the "id" field
         NodeFilter idFilter = new NamedNodeFilter("id");
         NodeFilter filter = FilterHelper.chain(
                 idFilter, context.getDefaultNodeFilter());

@@ -125,7 +125,7 @@ public abstract class AbstractEntityResultSet<T> extends NameResultSet<T> {
     /**
      * Adds sort constraints.
      * This implementation adds all those returned by
-     * {@link #getSortConstraints()}, and finally adds a sort on <em>uid</em>
+     * {@link #getSortConstraints()}, and finally adds a sort on <em>id</em>
      * to guarantee that subsequent queries will return results in the same
      * order.
      *

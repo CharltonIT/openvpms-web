@@ -157,7 +157,7 @@ public class IMObjectHelper {
                 Iterator<ObjectSet> iter = new ObjectSetQueryIterator(query);
                 if (iter.hasNext()) {
                     ObjectSet set = iter.next();
-                    return (String) set.get("o.name");
+                    return set.getString("o.name");
                 }
             } catch (OpenVPMSException error) {
                 log.error(error, error);
@@ -183,7 +183,7 @@ public class IMObjectHelper {
                 Iterator<ObjectSet> iter = new ObjectSetQueryIterator(query);
                 if (iter.hasNext()) {
                     ObjectSet set = iter.next();
-                    return (Boolean) set.get("o.active");
+                    return set.getBoolean("o.active");
                 }
             } catch (OpenVPMSException error) {
                 log.error(error, error);
