@@ -28,13 +28,14 @@ import nextapp.echo2.app.table.TableColumn;
 import nextapp.echo2.app.table.TableColumnModel;
 import org.openvpms.component.business.domain.im.product.Product;
 import org.openvpms.component.business.domain.im.product.ProductPrice;
+import org.openvpms.component.business.service.archetype.helper.TypeHelper;
 import org.openvpms.web.component.im.table.BaseIMObjectTableModel;
-import org.openvpms.web.component.im.util.IMObjectHelper;
 import org.openvpms.web.component.util.LabelFactory;
 import org.openvpms.web.component.util.NumberFormatter;
 
 import java.math.BigDecimal;
 import java.text.NumberFormat;
+import java.util.Date;
 
 
 /**
@@ -117,8 +118,7 @@ public class ProductTableModel extends BaseIMObjectTableModel<Product> {
      */
     private Component getPrice(String shortName, Product product) {
         Component result = null;
-        ProductPrice price = IMObjectHelper.getObject(
-                shortName, product.getProductPrices());
+        ProductPrice price = getProductPrice(shortName, product);
         if (price != null) {
             BigDecimal value = price.getPrice();
             if (value != null) {
@@ -136,4 +136,31 @@ public class ProductTableModel extends BaseIMObjectTableModel<Product> {
         }
         return result;
     }
+
+    /**
+     * Helper to return a product price from a product.
+     * This only returns prices that have a start and end time overlapping
+     * the current start time.
+     *
+     * @param shortName the price short name
+     * @param product   the product
+     * @return the price corresponding to  <tt>shortName</tt> or
+     *         <tt>null</tt> if none exists
+     */
+    protected ProductPrice getProductPrice(String shortName, Product product) {
+        ProductPrice result = null;
+        long startTime = System.currentTimeMillis();
+        for (ProductPrice price : product.getProductPrices()) {
+            Date fromDate = price.getFromDate();
+            Date thruDate = price.getThruDate();
+            if (TypeHelper.isA(price, shortName)
+                    && (fromDate == null || fromDate.getTime() <= startTime)
+                    && (thruDate == null || thruDate.getTime() >= startTime)) {
+                result = price;
+                break;
+            }
+        }
+        return result;
+    }
+
 }

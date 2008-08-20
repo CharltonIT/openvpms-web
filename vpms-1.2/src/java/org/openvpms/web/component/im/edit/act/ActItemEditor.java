@@ -24,18 +24,19 @@ import org.openvpms.component.business.domain.im.common.Participation;
 import org.openvpms.component.business.domain.im.product.Product;
 import org.openvpms.component.business.domain.im.product.ProductPrice;
 import org.openvpms.component.business.service.archetype.helper.ActBean;
+import org.openvpms.component.business.service.archetype.helper.TypeHelper;
 import org.openvpms.web.component.edit.Editor;
 import org.openvpms.web.component.im.filter.NodeFilter;
 import org.openvpms.web.component.im.layout.AbstractLayoutStrategy;
 import org.openvpms.web.component.im.layout.IMObjectLayoutStrategy;
 import org.openvpms.web.component.im.layout.LayoutContext;
 import org.openvpms.web.component.im.product.ProductParticipationEditor;
-import org.openvpms.web.component.im.util.IMObjectHelper;
 import org.openvpms.web.component.property.Modifiable;
 import org.openvpms.web.component.property.ModifiableListener;
 import org.openvpms.web.component.property.Property;
 
 import java.math.BigDecimal;
+import java.util.Date;
 
 
 /**
@@ -143,6 +144,8 @@ public abstract class ActItemEditor extends AbstractActEditor {
 
     /**
      * Helper to return a product price from a product.
+     * This only returns prices that have a start and end time overlapping
+     * the act start time.
      *
      * @param shortName the price short name
      * @param product   the product
@@ -150,7 +153,19 @@ public abstract class ActItemEditor extends AbstractActEditor {
      *         <tt>null</tt> if none exists
      */
     protected ProductPrice getPrice(String shortName, Product product) {
-        return IMObjectHelper.getObject(shortName, product.getProductPrices());
+        ProductPrice result = null;
+        long startTime = getStartTime().getTime();
+        for (ProductPrice price : product.getProductPrices()) {
+            Date fromDate = price.getFromDate();
+            Date thruDate = price.getThruDate();
+            if (TypeHelper.isA(price, shortName)
+                    && (fromDate == null || fromDate.getTime() <= startTime)
+                    && (thruDate == null || thruDate.getTime() >= startTime)) {
+                result = price;
+                break;
+            }
+        }
+        return result;
     }
 
     /**
