@@ -21,6 +21,7 @@ package org.openvpms.web.app.workflow;
 import nextapp.echo2.app.Table;
 import org.openvpms.component.business.domain.im.common.IMObject;
 import org.openvpms.component.business.domain.im.party.Party;
+import org.openvpms.web.app.patient.visit.VisitEditorDialog;
 import org.openvpms.web.component.dialog.ConfirmationDialog;
 import org.openvpms.web.component.im.edit.EditDialog;
 import org.openvpms.web.component.im.query.Browser;
@@ -33,8 +34,9 @@ import org.openvpms.web.component.workflow.Task;
 import org.openvpms.web.component.workflow.TaskContext;
 import org.openvpms.web.component.workflow.WorkflowImpl;
 import org.openvpms.web.test.EchoTestHelper;
-import static org.junit.Assert.assertTrue;
+
 import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 
 /**
@@ -145,17 +147,17 @@ public class WorkflowRunner<T extends WorkflowImpl> {
     }
 
     /**
-     * Returns the clinial event dialog.
+     * Returns the clinical event dialog.
      * <p/>
-     * The current task must be an {@link EditClinicalEventTask}.
+     * The current task must be an {@link EditVisitTask}.
      *
      * @return the dialog
      */
-    public BrowserDialog editClinicalEvent() {
+    public VisitEditorDialog editVisit() {
         Task current = getTask();
-        assertTrue(current instanceof EditClinicalEventTask);
-        EditClinicalEventTask edit = (EditClinicalEventTask) current;
-        return edit.getBrowserDialog();
+        assertTrue(current instanceof EditVisitTask);
+        EditVisitTask edit = (EditVisitTask) current;
+        return edit.getVisitDialog();
     }
 
     /**

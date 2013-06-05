@@ -21,6 +21,7 @@ package org.openvpms.web.app.workflow.checkout;
 import org.openvpms.archetype.rules.act.ActStatus;
 import org.openvpms.archetype.rules.act.FinancialActStatus;
 import org.openvpms.archetype.rules.finance.account.CustomerAccountArchetypes;
+import org.openvpms.archetype.rules.patient.PatientArchetypes;
 import org.openvpms.component.business.domain.im.act.Act;
 import org.openvpms.component.business.domain.im.party.Party;
 import org.openvpms.component.business.domain.im.security.User;
@@ -28,7 +29,6 @@ import org.openvpms.component.business.service.archetype.helper.ActBean;
 import org.openvpms.component.business.service.archetype.helper.TypeHelper;
 import org.openvpms.component.system.common.exception.OpenVPMSException;
 import org.openvpms.web.app.workflow.GetClinicalEventTask;
-import static org.openvpms.web.app.workflow.GetClinicalEventTask.EVENT_SHORTNAME;
 import org.openvpms.web.app.workflow.GetInvoiceTask;
 import org.openvpms.web.app.workflow.payment.PaymentWorkflow;
 import org.openvpms.web.component.app.Context;
@@ -153,8 +153,8 @@ public class CheckOutWorkflow extends WorkflowImpl {
         payWorkflow.setRequired(false);
         addTask(new ConditionalTask(posted, payWorkflow));
 
-        // add the most recent clinicial event to the context
-        addTask(new GetClinicalEventTask());
+        // add the most recent clinical event to the context
+        addTask(new GetClinicalEventTask(act.getActivityStartTime()));
 
         // print acts and documents created since the visit or invoice was
         // created
@@ -254,7 +254,7 @@ public class CheckOutWorkflow extends WorkflowImpl {
          */
         public void execute(TaskContext context) {
             Date min = getMinStartTime(CustomerAccountArchetypes.INVOICE, startTime, context);
-            min = getMinStartTime(EVENT_SHORTNAME, min, context);
+            min = getMinStartTime(PatientArchetypes.CLINICAL_EVENT, min, context);
             PrintDocumentsTask printDocs = new PrintDocumentsTask(min);
             printDocs.setRequired(false);
             addTask(printDocs);

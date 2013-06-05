@@ -11,9 +11,7 @@
  *  for the specific language governing rights and limitations under the
  *  License.
  *
- *  Copyright 2006 (C) OpenVPMS Ltd. All Rights Reserved.
- *
- *  $Id:CustomerInvoiceItemEditor.java 2287 2007-08-13 07:56:33Z tanderson $
+ *  Copyright 2012 (C) OpenVPMS Ltd. All Rights Reserved.
  */
 
 package org.openvpms.web.app.customer.charge;
@@ -24,7 +22,6 @@ import org.apache.commons.lang.ObjectUtils;
 import org.openvpms.archetype.rules.finance.account.CustomerAccountArchetypes;
 import org.openvpms.archetype.rules.finance.invoice.ChargeItemDocumentLinker;
 import org.openvpms.archetype.rules.finance.tax.CustomerTaxRules;
-import org.openvpms.archetype.rules.finance.tax.TaxRuleException;
 import org.openvpms.archetype.rules.patient.reminder.ReminderRules;
 import org.openvpms.archetype.rules.product.ProductArchetypes;
 import org.openvpms.archetype.rules.stock.StockRules;
@@ -37,14 +34,13 @@ import org.openvpms.component.business.domain.im.common.IMObjectReference;
 import org.openvpms.component.business.domain.im.party.Party;
 import org.openvpms.component.business.domain.im.product.Product;
 import org.openvpms.component.business.domain.im.product.ProductPrice;
-import org.openvpms.component.business.service.archetype.ArchetypeServiceException;
 import org.openvpms.component.business.service.archetype.helper.ActBean;
 import org.openvpms.component.business.service.archetype.helper.EntityBean;
 import org.openvpms.component.business.service.archetype.helper.IMObjectBean;
 import org.openvpms.component.business.service.archetype.helper.TypeHelper;
 import org.openvpms.component.system.common.exception.OpenVPMSException;
 import org.openvpms.web.app.customer.PriceActItemEditor;
-import org.openvpms.web.app.patient.mr.PatientInvestigationActEditor;
+import org.openvpms.web.app.patient.history.PatientInvestigationActEditor;
 import org.openvpms.web.app.patient.mr.PatientMedicationActEditor;
 import org.openvpms.web.component.app.Context;
 import org.openvpms.web.component.edit.Editor;
@@ -61,6 +57,7 @@ import org.openvpms.web.component.im.filter.NamedNodeFilter;
 import org.openvpms.web.component.im.filter.NodeFilter;
 import org.openvpms.web.component.im.layout.IMObjectLayoutStrategy;
 import org.openvpms.web.component.im.layout.LayoutContext;
+import org.openvpms.web.component.im.product.FixedPriceEditor;
 import org.openvpms.web.component.im.product.ProductParticipationEditor;
 import org.openvpms.web.component.im.util.IMObjectSorter;
 import org.openvpms.web.component.im.util.LookupNameHelper;
@@ -93,7 +90,7 @@ import static org.openvpms.archetype.rules.stock.StockArchetypes.STOCK_LOCATION_
 
 
 /**
- * An editor for {@link Act}s which have an archetype of
+ * An editor for {@link org.openvpms.component.business.domain.im.act.Act}s which have an archetype of
  * <em>act.customerAccountInvoiceItem</em>,
  * <em>act.customerAccountCreditItem</em>
  * or <em>act.customerAccountCounterItem</em>.
@@ -101,7 +98,7 @@ import static org.openvpms.archetype.rules.stock.StockArchetypes.STOCK_LOCATION_
  * @author <a href="mailto:support@openvpms.org">OpenVPMS Team</a>
  * @version $LastChangedDate:2006-02-21 03:48:29Z $
  */
-public class CustomerChargeActItemEditor extends PriceActItemEditor {
+public abstract class CustomerChargeActItemEditor extends PriceActItemEditor {
 
     /**
      * Dispensing act editor. May be <tt>null</tt>
@@ -117,12 +114,6 @@ public class CustomerChargeActItemEditor extends PriceActItemEditor {
      * Reminders act editor. May be <tt>null</tt>
      */
     private ActRelationshipCollectionEditor reminders;
-
-    /**
-     * The no. of medication dialogs currently popped up. The invoice item
-     * is invalid until this is <code>0</tt>
-     */
-    private int patientActPopups = 0;
 
     /**
      * The medication, investigation and reminder act editor manager.
@@ -193,7 +184,7 @@ public class CustomerChargeActItemEditor extends PriceActItemEditor {
 
 
     /**
-     * Constructs a <tt>CustomerChargeActItemEditor</tt>.
+     * Constructs a <tt>AbstractCustomerChargeActItemEditor</tt>.
      * <p/>
      * This recalculates the tax amount.
      *
@@ -299,7 +290,7 @@ public class CustomerChargeActItemEditor extends PriceActItemEditor {
      */
     @Override
     public boolean validate(Validator validator) {
-        return (patientActPopups == 0) && super.validate(validator);
+        return (popupEditorMgr == null || popupEditorMgr.isComplete()) && super.validate(validator);
     }
 
     /**
@@ -324,7 +315,7 @@ public class CustomerChargeActItemEditor extends PriceActItemEditor {
      * Saves the object.
      * <p/>
      * For invoice items, this implementation also creates/deletes document acts related to the document templates
-     * associated with the product, using {@link ChargeItemDocumentLinker}.
+     * associated with the product, using {@link org.openvpms.archetype.rules.finance.invoice.ChargeItemDocumentLinker}.
      *
      * @return <tt>true</tt> if the save was successful
      */
@@ -354,33 +345,12 @@ public class CustomerChargeActItemEditor extends PriceActItemEditor {
     /**
      * Creates the layout strategy.
      *
+     * @param fixedPrice the fixed price editor
      * @return a new layout strategy
      */
     @Override
-    protected IMObjectLayoutStrategy createLayoutStrategy() {
-        return new PriceItemLayoutStrategy() {
-            {
-                if (dispensing != null) {
-                    addComponent(new ComponentState(dispensing));
-                }
-                if (investigations != null) {
-                    addComponent(new ComponentState(investigations));
-                }
-                if (reminders != null) {
-                    addComponent(new ComponentState(reminders));
-                }
-            }
-
-            @Override
-            protected ComponentState createComponent(Property property, IMObject parent, LayoutContext context) {
-                ComponentState state = super.createComponent(property, parent, context);
-                if ("quantity".equals(property.getName())) {
-                    Component component = RowFactory.create("CellSpacing", state.getComponent(), sellingUnits);
-                    state = new ComponentState(component, property);
-                }
-                return state;
-            }
-        };
+    protected IMObjectLayoutStrategy createLayoutStrategy(FixedPriceEditor fixedPrice) {
+        return new CustomerChargeItemLayoutStrategy(fixedPrice);
     }
 
     /**
@@ -481,13 +451,14 @@ public class CustomerChargeActItemEditor extends PriceActItemEditor {
             updateStockLocation(product);
             updateSellingUnits(product);
         }
+        notifyProductListener(product);
     }
 
     /**
      * Calculates the tax amount.
      *
-     * @throws ArchetypeServiceException for any archetype service error
-     * @throws TaxRuleException          for any tax error
+     * @throws org.openvpms.component.business.service.archetype.ArchetypeServiceException for any archetype service error
+     * @throws org.openvpms.archetype.rules.finance.tax.TaxRuleException          for any tax error
      */
     protected void calculateTax() {
         Party customer = getCustomer();
@@ -677,11 +648,11 @@ public class CustomerChargeActItemEditor extends PriceActItemEditor {
         NodeFilter expectedFilter = getFilterForProduct(productRef);
         if (!ObjectUtils.equals(currentFilter, expectedFilter)) {
             Component popupFocus = null;
-            if (patientActPopups != 0) {
+            if (popupEditorMgr != null && !popupEditorMgr.isComplete()) {
                 popupFocus = FocusHelper.getFocus();
             }
             changeLayout(expectedFilter);  // this can move the focus away from the popups, if any
-            if (patientActPopups == 0) {
+            if (popupEditorMgr != null && popupEditorMgr.isComplete()) {
                 // no current popups, so move focus to the product
                 moveFocusToProduct();
             } else {
@@ -760,14 +731,12 @@ public class CustomerChargeActItemEditor extends PriceActItemEditor {
     private void queuePatientActEditor(final IMObjectEditor editor, boolean skip,
                                        final ActRelationshipCollectionEditor collection) {
         if (popupEditorMgr != null) {
-            ++patientActPopups;
             popupEditorMgr.queue(editor, skip, new PopupEditorManager.Listener() {
                 public void completed(boolean skipped) {
                     if (skipped) {
                         collection.remove(editor.getObject());
                     }
-                    --patientActPopups;
-                    if (patientActPopups == 0) {
+                    if (popupEditorMgr.isComplete()) {
                         moveFocusToProduct();
 
                         // force the parent collection editor to re-check the validation status of
@@ -1028,4 +997,29 @@ public class CustomerChargeActItemEditor extends PriceActItemEditor {
         return editor;
     }
 
+    protected class CustomerChargeItemLayoutStrategy extends PriceItemLayoutStrategy {
+
+        public CustomerChargeItemLayoutStrategy(FixedPriceEditor fixedPrice) {
+            super(fixedPrice);
+            if (dispensing != null) {
+                addComponent(new ComponentState(dispensing));
+            }
+            if (investigations != null) {
+                addComponent(new ComponentState(investigations));
+            }
+            if (reminders != null) {
+                addComponent(new ComponentState(reminders));
+            }
+        }
+
+        @Override
+        protected ComponentState createComponent(Property property, IMObject parent, LayoutContext context) {
+            ComponentState state = super.createComponent(property, parent, context);
+            if ("quantity".equals(property.getName())) {
+                Component component = RowFactory.create("CellSpacing", state.getComponent(), sellingUnits);
+                state = new ComponentState(component, property);
+            }
+            return state;
+        }
+    }
 }

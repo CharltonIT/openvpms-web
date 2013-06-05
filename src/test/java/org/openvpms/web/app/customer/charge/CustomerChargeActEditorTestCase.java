@@ -1,10 +1,5 @@
 package org.openvpms.web.app.customer.charge;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 import org.junit.Before;
 import org.junit.Test;
 import org.openvpms.archetype.rules.act.ActCalculator;
@@ -13,7 +8,6 @@ import org.openvpms.archetype.rules.finance.account.CustomerAccountArchetypes;
 import org.openvpms.archetype.rules.finance.account.CustomerAccountRules;
 import org.openvpms.archetype.rules.patient.InvestigationActStatus;
 import org.openvpms.archetype.rules.patient.MedicalRecordRules;
-import org.openvpms.archetype.rules.patient.PatientArchetypes;
 import org.openvpms.archetype.rules.patient.reminder.ReminderStatus;
 import org.openvpms.archetype.rules.product.ProductArchetypes;
 import org.openvpms.archetype.rules.stock.StockArchetypes;
@@ -36,15 +30,21 @@ import org.openvpms.web.component.im.layout.LayoutContext;
 import org.openvpms.web.component.property.CollectionProperty;
 import org.openvpms.web.component.property.Validator;
 import org.openvpms.web.component.property.ValidatorError;
+import org.openvpms.web.component.util.NumberFormatter;
 import org.openvpms.web.resource.util.Messages;
 import org.openvpms.web.system.ServiceHelper;
-import static org.openvpms.web.app.customer.charge.CustomerChargeTestHelper.checkSavePopup;
 import org.springframework.transaction.TransactionStatus;
 import org.springframework.transaction.support.TransactionCallback;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.math.BigDecimal;
 import java.util.List;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Tests the {@link CustomerChargeActEditor} class.
@@ -583,7 +583,9 @@ public class CustomerChargeActEditorTestCase extends AbstractCustomerChargeActEd
         List<ValidatorError> list = validator.getErrors(editor);
         assertEquals(1, list.size());
         String message = Messages.get("act.validation.totalMismatch", editor.getProperty("amount").getDisplayName(),
-                                      charge.getTotal(), editor.getProperty("items").getDisplayName(), itemTotal);
+                                      NumberFormatter.formatCurrency(charge.getTotal()),
+                                      editor.getProperty("items").getDisplayName(),
+                                      NumberFormatter.formatCurrency(itemTotal));
         String expected = Messages.get(ValidatorError.MSG_KEY, message);
         assertEquals(expected, list.get(0).toString());
 
@@ -829,14 +831,9 @@ public class CustomerChargeActEditorTestCase extends AbstractCustomerChargeActEd
         editor.getComponent();
         CustomerChargeTestHelper.addItem(editor, patient, template, BigDecimal.ONE, mgr);
 
-        // need to add a new item to force template to expand. As it is not populated, it won't be saved
-        editor.addItem();
-
         boolean invoice = TypeHelper.isA(charge, CustomerAccountArchetypes.INVOICE);
         int product1Acts = 0;     // expected child acts for product1
         if (invoice) {
-            // close medication popup
-            checkSavePopup(mgr, PatientArchetypes.PATIENT_MEDICATION);
             product1Acts++;
         }
 
@@ -1035,7 +1032,7 @@ public class CustomerChargeActEditorTestCase extends AbstractCustomerChargeActEd
          * @param item the item to delete
          */
         public void delete(Act item) {
-            getEditor().remove(item);
+            getItems().remove(item);
         }
 
         /**
@@ -1044,7 +1041,7 @@ public class CustomerChargeActEditorTestCase extends AbstractCustomerChargeActEd
          * @return the current editor. May be <tt>null</tt>
          */
         public CustomerChargeActItemEditor getCurrentEditor() {
-            return (CustomerChargeActItemEditor) getEditor().getCurrentEditor();
+            return (CustomerChargeActItemEditor) getItems().getCurrentEditor();
         }
 
     }

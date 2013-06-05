@@ -356,7 +356,7 @@ class EmailSMSSampler extends AbstractModifiable {
                 String message = sms.getMessage();
                 MailMessage mail = factory.createMessage(phone, message);
                 if (!StringUtils.isEmpty(mail.getFrom()) && !StringUtils.isEmpty(mail.getTo())
-                    && !StringUtils.isEmpty(mail.getText())) {
+                        && !StringUtils.isEmpty(mail.getText())) {
                     result = true;
                 }
             } catch (Throwable exception) {

@@ -85,6 +85,13 @@
     </style>
 
 
+    <style name="HelpDialog.content" type="nextapp.echo2.app.SplitPane">
+        <properties>
+            <property name="resizable" value="false"/>
+            <property name="separatorPosition" value="${HelpDialog.content.separatorPosition}"/>
+        </properties>
+    </style>
+
     <style name="CustomerSummary.AlertDialog" base-name="PopupWindow"
            type="nextapp.echo2.app.WindowPane">
         <properties>
@@ -118,7 +125,7 @@
         </properties>
     </style>
 
-    <style name="PatientSummary.Reminder.Overdue"
+    <style name="PatientSummary.Reminder.OVERDUE"
            type="nextapp.echo2.app.Component">
         <properties>
             <property name="layoutData">
@@ -132,28 +139,28 @@
         </properties>
     </style>
 
-    <style name="PatientSummary.Reminder.Remind"
+    <style name="PatientSummary.Reminder.DUE"
            type="nextapp.echo2.app.Component">
         <properties>
             <property name="layoutData">
                 <layout-data type="nextapp.echo2.app.layout.TableLayoutData">
                     <properties>
                         <property name="insets" value="${padding.small} ${padding.tiny}"/>
-                        <property name="background" value="${reminder.remind.colour}"/>
+                        <property name="background" value="${reminder.due.colour}"/>
                     </properties>
                 </layout-data>
             </property>
         </properties>
     </style>
 
-    <style name="PatientSummary.Reminder.Normal"
+    <style name="PatientSummary.Reminder.NOT_DUE"
            type="nextapp.echo2.app.Component">
         <properties>
             <property name="layoutData">
                 <layout-data type="nextapp.echo2.app.layout.TableLayoutData">
                     <properties>
                         <property name="insets" value="${padding.small} ${padding.tiny}"/>
-                        <property name="background" value="${reminder.default.colour}"/>
+                        <property name="background" value="${reminder.notdue.colour}"/>
                     </properties>
                 </layout-data>
             </property>
@@ -287,6 +294,12 @@
                     </properties>
                 </layout-data>
             </property>
+        </properties>
+    </style>
+
+    <style name="VisitEditor.TabbedPane" type="echopointng.TabbedPane">
+        <properties>
+            <property name="height" value="${VisitEditor.TabbedPane.height}"/>
         </properties>
     </style>
 
@@ -557,6 +570,26 @@
         </properties>
     </style>
 
+    <style name="SMSDialog" base-name="PopupWindow" type="nextapp.echo2.app.WindowPane">
+        <properties>
+            <property name="width" value="${SMSDialog.width}"/>
+            <property name="height" value="${SMSDialog.height}"/>
+        </properties>
+    </style>
+
+    <style name="SMSConfigEmail" type="nextapp.echo2.app.SplitPane">
+        <properties>
+            <property name="resizable" value="true"/>
+            <property name="separatorPosition" value="${SMSConfigEmail.separatorPosition}"/>
+        </properties>
+    </style>
+
+    <style name="SMSConfigEmailGeneric" type="nextapp.echo2.app.SplitPane" base-name="SMSConfigEmail">
+        <properties>
+            <property name="separatorPosition" value="${SMSConfigEmailGeneric.separatorPosition}"/>
+        </properties>
+    </style>
+
     <style name="MailDialog" base-name="PopupWindow" type="nextapp.echo2.app.WindowPane">
         <properties>
             <property name="width" value="${MailDialog.width}"/>
@@ -647,6 +680,21 @@
             <property name="insets" value="${padding.small}"/>
         </properties>
     </style>
+
+    <style name="UserMessageEditDialog" base-name="PopupWindow" type="nextapp.echo2.app.WindowPane">
+        <properties>
+            <property name="width" value="${MailDialog.width}"/>
+            <property name="height" value="${MailDialog.height}"/>
+        </properties>
+    </style>
+
+    <style name="UserMessage.message" type="nextapp.echo2.app.TextArea" base-name="default">
+        <properties>
+            <property name="width" value="100%"/>
+            <property name="height" value="${UserMessage.message.height}"/>
+        </properties>
+    </style>
+
 
     <style name="SelectUserDialog" base-name="PopupWindow"
            type="nextapp.echo2.app.WindowPane">
@@ -1096,6 +1144,27 @@
     </style>
 
     <!-- =================================================================== -->
+    <!--  Sort                                                               -->
+    <!-- =================================================================== -->
+
+    <style name="sort.ascending" type="nextapp.echo2.app.Button">
+        <properties>
+            <property name="icon" type="nextapp.echo2.app.HttpImageReference">
+                <http-image-reference url="../images/buttons/up.png"/>
+            </property>
+        </properties>
+    </style>
+
+    <style name="sort.descending" type="nextapp.echo2.app.Button">
+        <properties>
+            <property name="icon" type="nextapp.echo2.app.HttpImageReference">
+                <http-image-reference url="../images/buttons/down.png"/>
+            </property>
+        </properties>
+    </style>
+
+
+    <!-- =================================================================== -->
     <!--  Date selector                                                      -->
     <!-- =================================================================== -->
 
@@ -1245,12 +1314,26 @@
     <!--  Reminder Button                                                    -->
     <!-- =================================================================== -->
 
-    <style name="reminder" type="nextapp.echo2.app.Button">
+    <style name="reminder.NOT_DUE" type="nextapp.echo2.app.Button">
         <properties>
-            <property name="icon"
-                      type="nextapp.echo2.app.ResourceImageReference">
-                <resource-image-reference
-                        resource="/org/openvpms/web/resource/image/buttons/reminder.gif"/>
+            <property name="icon" type="nextapp.echo2.app.ResourceImageReference">
+                <resource-image-reference resource="/org/openvpms/web/resource/image/buttons/reminder-green.png"/>
+            </property>
+        </properties>
+    </style>
+
+    <style name="reminder.DUE" type="nextapp.echo2.app.Button">
+        <properties>
+            <property name="icon" type="nextapp.echo2.app.ResourceImageReference">
+                <resource-image-reference resource="/org/openvpms/web/resource/image/buttons/reminder-amber.png"/>
+            </property>
+        </properties>
+    </style>
+
+    <style name="reminder.OVERDUE" type="nextapp.echo2.app.Button">
+        <properties>
+            <property name="icon" type="nextapp.echo2.app.ResourceImageReference">
+                <resource-image-reference resource="/org/openvpms/web/resource/image/buttons/reminder-red.png"/>
             </property>
         </properties>
     </style>
@@ -1265,7 +1348,6 @@
                 <font size="${font.size}">
                     <typeface name="${font.typeface}"/>
                 </font>
-
             </property>
         </properties>
     </style>

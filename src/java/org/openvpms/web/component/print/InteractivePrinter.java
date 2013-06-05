@@ -308,7 +308,7 @@ public class InteractivePrinter implements Printer {
 
             @Override
             protected void onMail() {
-                doMail();
+                doMail(this);
             }
         };
     }
@@ -340,6 +340,8 @@ public class InteractivePrinter implements Printer {
                     }
                 } else if (PrintDialog.SKIP_ID.equals(action)) {
                     skipped();
+                } else if (MailDialog.SEND_ID.equals(action)) {
+                    mailed();
                 } else {
                     cancelled();
                 }
@@ -386,15 +388,30 @@ public class InteractivePrinter implements Printer {
 
     /**
      * Generates a document and pops up a mail document with it as an attachment.
+     * <p/>
+     * If emailed, then the print dialog is closed.
+     *
+     * @param parent the parent print dialog
      */
-    protected void doMail() {
+    protected void doMail(final PrintDialog parent) {
         try {
             Document document = getDocument(DocFormats.PDF_TYPE, true);
-            MailDialog dialog = new MailDialog(context);
+            final MailDialog dialog = new MailDialog(context);
             MailEditor editor = dialog.getMailEditor();
             editor.setSubject(getDisplayName());
             editor.addAttachment(document);
             dialog.show();
+            dialog.addWindowPaneListener(new WindowPaneListener() {
+                @Override
+                public void onClose(WindowPaneEvent event) {
+                    if (MailDialog.SEND_ID.equals(dialog.getAction())) {
+                        // close the parent dialog. This will notify registered listeners of the action taken,
+                        // so need to propagate the action to the parent.
+                        parent.setDefaultCloseAction(MailDialog.SEND_ID);
+                        parent.close();
+                    }
+                }
+            });
         } catch (OpenVPMSException exception) {
             ErrorHelper.show(exception);
         }
@@ -428,6 +445,16 @@ public class InteractivePrinter implements Printer {
      * Notifies any registered listener.
      */
     protected void skipped() {
+        if (listener != null) {
+            listener.skipped();
+        }
+    }
+
+    /**
+     * Invoked when the print job is mailed instead.
+     * Notifies any registered listener that the printing has been skipped.
+     */
+    protected void mailed() {
         if (listener != null) {
             listener.skipped();
         }

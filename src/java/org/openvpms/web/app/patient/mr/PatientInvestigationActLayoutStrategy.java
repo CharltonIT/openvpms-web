@@ -114,11 +114,13 @@ public class PatientInvestigationActLayoutStrategy extends DocumentActLayoutStra
     @Override
     protected ComponentState createComponent(Property property, IMObject parent,
                                              LayoutContext context) {
-        ComponentState result;
+        ComponentState result = null;
         String name = property.getName();
         if (showDateReadOnly && name.equals("startTime")) {
             result = getReadOnlyComponent(property, parent, context);
-        } else {
+        }
+
+        if (result == null) {
             result = super.createComponent(property, parent, context);
         }
         return result;
@@ -148,8 +150,7 @@ public class PatientInvestigationActLayoutStrategy extends DocumentActLayoutStra
             Alignment topRight = new Alignment(Alignment.RIGHT, Alignment.TOP);
             rowLayout.setAlignment(topRight);
             print.setLayoutData(rowLayout);
-            Grid grid = createGrid(descriptors);
-            doGridLayout(object, descriptors, properties, grid, context);
+            Grid grid = createGrid(object, descriptors, properties, context);
             Row row = RowFactory.create("WideCellSpacing", grid);
             ButtonSet set = new ButtonSet(row);
             set.add(print);

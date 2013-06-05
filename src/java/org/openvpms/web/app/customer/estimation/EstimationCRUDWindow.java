@@ -21,31 +21,37 @@ package org.openvpms.web.app.customer.estimation;
 import nextapp.echo2.app.Button;
 import nextapp.echo2.app.event.ActionEvent;
 import nextapp.echo2.app.event.WindowPaneEvent;
-import static org.openvpms.archetype.rules.act.EstimationActStatus.INVOICED;
-import static org.openvpms.archetype.rules.act.FinancialActStatus.CANCELLED;
-import static org.openvpms.archetype.rules.act.FinancialActStatus.COMPLETED;
-import static org.openvpms.archetype.rules.act.FinancialActStatus.IN_PROGRESS;
-import static org.openvpms.archetype.rules.act.FinancialActStatus.POSTED;
+import org.openvpms.archetype.rules.finance.account.CustomerAccountArchetypes;
 import org.openvpms.archetype.rules.finance.estimation.EstimationRules;
+import org.openvpms.archetype.rules.util.DateRules;
 import org.openvpms.component.business.domain.im.act.Act;
+import org.openvpms.component.business.domain.im.act.FinancialAct;
+import org.openvpms.component.business.domain.im.party.Party;
+import org.openvpms.component.business.service.archetype.helper.ActBean;
 import org.openvpms.component.system.common.exception.OpenVPMSException;
 import org.openvpms.web.app.customer.CustomerActCRUDWindow;
 import org.openvpms.web.app.customer.charge.CustomerChargeActEditDialog;
-import org.openvpms.web.component.subsystem.CRUDWindowListener;
+import org.openvpms.web.app.workflow.GetInvoiceTask;
 import org.openvpms.web.component.button.ButtonSet;
 import org.openvpms.web.component.dialog.ConfirmationDialog;
 import org.openvpms.web.component.dialog.ErrorDialog;
 import org.openvpms.web.component.dialog.PopupDialogListener;
 import org.openvpms.web.component.event.ActionListener;
 import org.openvpms.web.component.event.WindowPaneListener;
+import org.openvpms.web.component.im.layout.DefaultLayoutContext;
 import org.openvpms.web.component.im.util.Archetypes;
 import org.openvpms.web.component.im.util.IMObjectHelper;
-import org.openvpms.web.component.im.layout.DefaultLayoutContext;
+import org.openvpms.web.component.subsystem.CRUDWindowListener;
 import org.openvpms.web.component.util.ButtonFactory;
 import org.openvpms.web.component.util.ErrorHelper;
+import org.openvpms.web.component.workflow.DefaultTaskContext;
+import org.openvpms.web.component.workflow.TaskContext;
 import org.openvpms.web.resource.util.Messages;
 
 import java.util.Date;
+
+import static org.openvpms.archetype.rules.act.EstimationActStatus.INVOICED;
+import static org.openvpms.archetype.rules.act.FinancialActStatus.CANCELLED;
 
 
 /**
@@ -78,8 +84,18 @@ public class EstimationCRUDWindow extends CustomerActCRUDWindow<Act> {
      * @param archetypes the archetypes that this may create
      */
     public EstimationCRUDWindow(Archetypes<Act> archetypes) {
-        super(archetypes);
+        super(archetypes, new EstimateActions());
         rules = new EstimationRules();
+    }
+
+    /**
+     * Returns the operations that may be performed on the selected object.
+     *
+     * @return the actions
+     */
+    @Override
+    protected EstimateActions getActions() {
+        return (EstimateActions) super.getActions();
     }
 
     /**
@@ -115,20 +131,15 @@ public class EstimationCRUDWindow extends CustomerActCRUDWindow<Act> {
     @Override
     protected void enableButtons(ButtonSet buttons, boolean enable) {
         super.enableButtons(buttons, enable);
-        boolean enableEdit = false;
-        boolean enableDelete = false;
         boolean enablePost = false;
         boolean enableInvoice = false;
 
         if (enable) {
             Act act = getObject();
-            enableEdit = canEdit(act);
-            enableDelete = canDelete(act);
-            enablePost = canPost(act);
-            enableInvoice = canInvoice(act);
+            EstimateActions ops = getActions();
+            enablePost = ops.canPost(act);
+            enableInvoice = ops.canInvoice(act);
         }
-        buttons.setEnabled(EDIT_ID, enableEdit);
-        buttons.setEnabled(DELETE_ID, enableDelete);
         buttons.setEnabled(POST_ID, enablePost);
         buttons.setEnabled(PREVIEW_ID, enable);
         buttons.setEnabled(COPY_ID, enable);
@@ -165,7 +176,7 @@ public class EstimationCRUDWindow extends CustomerActCRUDWindow<Act> {
             if (CANCELLED.equals(status) || INVOICED.equals(status)) {
                 showStatusError(act, "customer.estimation.noinvoice.title",
                                 "customer.estimation.noinvoice.message");
-            } else if (act.getActivityEndTime() != null && act.getActivityEndTime().before(new Date())) {
+            } else if (expired(act)) {
                 showStatusError(act, "customer.estimation.expired.title", "customer.estimation.expired.message");
             } else {
                 String title = Messages.get("customer.estimation.invoice.title");
@@ -185,15 +196,52 @@ public class EstimationCRUDWindow extends CustomerActCRUDWindow<Act> {
     }
 
     /**
+     * Determines if an estimation has expired.
+     *
+     * @param act the estimation act
+     * @return the estimation act
+     */
+    private boolean expired(Act act) {
+        boolean result = false;
+        Date endTime = DateRules.getDate(act.getActivityEndTime());
+        if (endTime != null) {
+            result = endTime.before(DateRules.getToday());
+        }
+        return result;
+    }
+
+    /**
      * Invoice out an estimation to the customer.
      *
      * @param estimation the estimation
      */
     private void invoice(final Act estimation) {
-        rules = new EstimationRules();
+        try {
+            final FinancialAct invoice = getInvoice(estimation);
+            if (invoice != null) {
+                String title = Messages.get("customer.estimation.existinginvoice.title");
+                String message = Messages.get("customer.estimation.existinginvoice.message");
+                ConfirmationDialog dialog = new ConfirmationDialog(title, message);
+                dialog.addWindowPaneListener(new PopupDialogListener() {
+                    @Override
+                    public void onOK() {
+                        invoice(estimation, invoice);
+                    }
+                });
+                dialog.show();
+            } else {
+                invoice(estimation, invoice);
+            }
+        } catch (OpenVPMSException exception) {
+            String title = Messages.get("customer.estimation.invoice.failed");
+            ErrorHelper.show(title, exception);
+        }
+    }
+
+    private void invoice(final Act estimation, FinancialAct invoice) {
         try {
             EstimationInvoicer invoicer = new EstimationInvoicer();
-            CustomerChargeActEditDialog editor = invoicer.invoice(estimation, new DefaultLayoutContext(true));
+            CustomerChargeActEditDialog editor = invoicer.invoice(estimation, invoice, new DefaultLayoutContext(true));
             editor.addWindowPaneListener(new WindowPaneListener() {
                 public void onClose(WindowPaneEvent event) {
                     onRefresh(estimation);
@@ -205,56 +253,17 @@ public class EstimationCRUDWindow extends CustomerActCRUDWindow<Act> {
         }
     }
 
-    /**
-     * Determines if an act can be deleted.
-     *
-     * @param act the act
-     * @return <tt>true</tt> if the act can be deleted, otherwise
-     *         <tt>false</tt>
-     */
-    @Override
-    protected boolean canDelete(Act act) {
-        String status = act.getStatus();
-        return !(POSTED.equals(status) || INVOICED.equals(status));
-    }
-
-    /**
-     * Determines if an act can be edited.
-     *
-     * @param act the act
-     * @return <tt>true</tt> if the act can be edited, otherwise
-     *         <tt>false</tt>
-     */
-    @Override
-    protected boolean canEdit(Act act) {
-        String status = act.getStatus();
-        return IN_PROGRESS.equals(status) || COMPLETED.equals(status)
-               || CANCELLED.equals(status);
-    }
-
-    /**
-     * Determines if an act can be posted (i.e finalised).
-     * <p/>
-     * This implementation returns <tt>true</tt> if the act isn't <tt>POSTED</tt>,<tt>CANCELLED</tt> nor
-     * <tt>INVOICED</tt>
-     *
-     * @param act the act
-     * @return <tt>true</tt> if the act can be posted
-     */
-    @Override
-    protected boolean canPost(Act act) {
-        return super.canPost(act) && !INVOICED.equals(act.getStatus());
-    }
-
-    /**
-     * Determines if an estimation can be invoiced.
-     *
-     * @param act the estimation
-     * @return <tt>true</tt> if the estimation can be invoiced, otherwise <tt>false</tt>
-     */
-    protected boolean canInvoice(Act act) {
-        String status = act.getStatus();
-        return !CANCELLED.equals(status) && !INVOICED.equals(status);
+    private FinancialAct getInvoice(Act estimation) {
+        ActBean bean = new ActBean(estimation);
+        Party customer = (Party) bean.getNodeParticipant("customer");
+        if (customer != null) {
+            TaskContext context = new DefaultTaskContext();
+            context.setCustomer(customer);
+            GetInvoiceTask task = new GetInvoiceTask();
+            task.execute(context);
+            return (FinancialAct) context.getObject(CustomerAccountArchetypes.INVOICE);
+        }
+        return null;
     }
 
 }

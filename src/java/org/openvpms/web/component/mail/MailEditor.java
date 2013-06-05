@@ -49,14 +49,18 @@ import org.openvpms.component.business.domain.im.document.Document;
 import org.openvpms.component.business.domain.im.party.Contact;
 import org.openvpms.component.business.service.archetype.IArchetypeService;
 import org.openvpms.component.business.service.archetype.helper.IMObjectBean;
+import org.openvpms.report.DocFormats;
+import org.openvpms.report.openoffice.Converter;
 import org.openvpms.web.component.echo.DropDown;
 import org.openvpms.web.component.echo.TextField;
 import org.openvpms.web.component.event.ActionListener;
 import org.openvpms.web.component.focus.FocusGroup;
 import org.openvpms.web.component.im.contact.ContactHelper;
+import org.openvpms.web.component.im.doc.DocumentHelper;
 import org.openvpms.web.component.im.doc.DocumentViewer;
 import org.openvpms.web.component.im.doc.Downloader;
 import org.openvpms.web.component.im.doc.DownloaderListener;
+import org.openvpms.web.component.im.layout.DefaultLayoutContext;
 import org.openvpms.web.component.im.list.AbstractListCellRenderer;
 import org.openvpms.web.component.property.AbstractModifiable;
 import org.openvpms.web.component.property.Modifiable;
@@ -244,6 +248,8 @@ public class MailEditor extends AbstractModifiable {
         subject.addModifiableListener(listener);
 
         message = createProperty("message", "mail.message");
+        message.setRequired(false);
+        message.setMaxLength(-1);     // no maximum length
         message.setTransformer(new StringPropertyTransformer(message, new Object(), false));
         message.addModifiableListener(listener);
     }
@@ -375,13 +381,20 @@ public class MailEditor extends AbstractModifiable {
         }
 
         boolean delete = false;
+
+        if (document.getMimeType() != null && !DocFormats.PDF_TYPE.equals(document.getMimeType()) &&
+                Converter.canConvert(document.getName(), document.getMimeType(), DocFormats.PDF_TYPE)) {
+            document = DocumentHelper.convert(document, DocFormats.PDF_TYPE);
+        }
+
         if (document.isNew()) {
             ServiceHelper.getArchetypeService().save(document);
             delete = true;
         }
         final DocRef ref = new DocRef(document, delete);
         documents.add(ref);
-        DocumentViewer documentViewer = new DocumentViewer(ref.getReference(), null, ref.getName(), true);
+        DocumentViewer documentViewer = new DocumentViewer(ref.getReference(), null, ref.getName(), true, false,
+                                                           new DefaultLayoutContext());
         documentViewer.setDownloadListener(new DownloaderListener() {
             public void download(Downloader downloader, String mimeType) {
                 onDownload(downloader, mimeType, ref.getReference());

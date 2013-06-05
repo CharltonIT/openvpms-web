@@ -38,6 +38,11 @@ import org.openvpms.web.component.property.ModifiableListener;
 public abstract class ActEditor extends AbstractActEditor {
 
     /**
+     * Determines if items are being edited.
+     */
+    private final boolean editItems;
+
+    /**
      * The act item editor.
      */
     private ActRelationshipCollectionEditor editor;
@@ -62,21 +67,9 @@ public abstract class ActEditor extends AbstractActEditor {
      * @param editItems if <tt>true</tt> create an editor for any items node
      * @param context   the layout context. May be <tt>null</tt>
      */
-    protected ActEditor(Act act, IMObject parent, boolean editItems,
-                        LayoutContext context) {
+    protected ActEditor(Act act, IMObject parent, boolean editItems, LayoutContext context) {
         super(act, parent, context);
-        if (editItems) {
-            CollectionProperty items = (CollectionProperty) getProperty("items");
-            if (items != null && !items.isHidden()) {
-                editor = createItemsEditor(act, items);
-                editor.addModifiableListener(new ModifiableListener() {
-                    public void modified(Modifiable modifiable) {
-                        onItemsChanged();
-                    }
-                });
-                getEditors().add(editor);
-            }
-        }
+        this.editItems = editItems;
     }
 
     /**
@@ -95,7 +88,19 @@ public abstract class ActEditor extends AbstractActEditor {
      *
      * @return the items collection editor. May be <tt>null</tt>
      */
-    protected ActRelationshipCollectionEditor getEditor() {
+    protected ActRelationshipCollectionEditor getItems() {
+        if (editor == null && editItems) {
+            CollectionProperty items = (CollectionProperty) getProperty("items");
+            if (items != null && !items.isHidden()) {
+                editor = createItemsEditor((Act) getObject(), items);
+                editor.addModifiableListener(new ModifiableListener() {
+                    public void modified(Modifiable modifiable) {
+                        onItemsChanged();
+                    }
+                });
+                getEditors().add(editor);
+            }
+        }
         return editor;
     }
 
@@ -126,10 +131,14 @@ public abstract class ActEditor extends AbstractActEditor {
      */
     @Override
     protected IMObjectLayoutStrategy createLayoutStrategy() {
-        if (editor != null) {
-            return new ActLayoutStrategy(editor);
+        ActRelationshipCollectionEditor items = getItems();
+        if (items != null) {
+            return new ActLayoutStrategy(items);
+        } else if (getProperty("items") != null) {
+            return new ActLayoutStrategy(false);
+        } else {
+            return super.createLayoutStrategy();
         }
-        return new ActLayoutStrategy(false);
     }
 
     /**

@@ -36,11 +36,13 @@ import org.openvpms.web.component.dialog.ConfirmationDialog;
 import org.openvpms.web.component.dialog.InformationDialog;
 import org.openvpms.web.component.dialog.PopupDialogListener;
 import org.openvpms.web.component.event.ActionListener;
+import org.openvpms.web.component.im.edit.DefaultActActions;
 import org.openvpms.web.component.im.edit.IMObjectEditor;
 import org.openvpms.web.component.im.util.Archetypes;
 import org.openvpms.web.component.im.util.UserHelper;
 import org.openvpms.web.component.util.ButtonFactory;
 import org.openvpms.web.component.util.ErrorHelper;
+import org.openvpms.web.component.util.NumberFormatter;
 import org.openvpms.web.resource.util.Messages;
 import org.openvpms.web.system.ServiceHelper;
 
@@ -90,7 +92,7 @@ public class AccountCRUDWindow extends CustomerActCRUDWindow<FinancialAct> {
      * @param archetypes the archetypes that this may create
      */
     public AccountCRUDWindow(Archetypes<FinancialAct> archetypes) {
-        super(archetypes);
+        super(archetypes, DefaultActActions.<FinancialAct>getInstance());
     }
 
     /**
@@ -151,7 +153,7 @@ public class AccountCRUDWindow extends CustomerActCRUDWindow<FinancialAct> {
         final FinancialAct act = getObject();
         String status = act.getStatus();
         if (!TypeHelper.isA(act, OPENING_BALANCE_TYPE, CLOSING_BALANCE_TYPE)
-            && FinancialActStatus.POSTED.equals(status)) {
+                && FinancialActStatus.POSTED.equals(status)) {
             String name = getArchetypeDescriptor().getDisplayName();
             String title = Messages.get("customer.account.reverse.title", name);
             String message = Messages.get("customer.account.reverse.message",
@@ -175,9 +177,9 @@ public class AccountCRUDWindow extends CustomerActCRUDWindow<FinancialAct> {
      */
     protected void onAdjust() {
         String[] shortNames = {"act.customerAccountDebitAdjust",
-                               "act.customerAccountCreditAdjust",
-                               "act.customerAccountInitialBalance",
-                               "act.customerAccountBadDebt"};
+                "act.customerAccountCreditAdjust",
+                "act.customerAccountInitialBalance",
+                "act.customerAccountBadDebt"};
         Archetypes<FinancialAct> archetypes = Archetypes.create(
                 shortNames, FinancialAct.class,
                 Messages.get("customer.account.createtype"));
@@ -203,7 +205,7 @@ public class AccountCRUDWindow extends CustomerActCRUDWindow<FinancialAct> {
                 } else {
                     String message = Messages.get(
                             "customer.account.balancecheck.error",
-                            expected, actual);
+                            NumberFormatter.formatCurrency(expected), NumberFormatter.formatCurrency(actual));
                     confirmRegenerate(message, customer);
                 }
             } catch (CustomerAccountRuleException exception) {

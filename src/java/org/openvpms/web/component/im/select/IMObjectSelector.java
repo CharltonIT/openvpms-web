@@ -33,6 +33,7 @@ import org.openvpms.web.component.app.GlobalContext;
 import org.openvpms.web.component.event.ActionListener;
 import org.openvpms.web.component.event.DocumentListener;
 import org.openvpms.web.component.event.WindowPaneListener;
+import org.openvpms.web.component.focus.FocusCommand;
 import org.openvpms.web.component.im.query.Browser;
 import org.openvpms.web.component.im.query.BrowserDialog;
 import org.openvpms.web.component.im.query.BrowserFactory;
@@ -42,8 +43,6 @@ import org.openvpms.web.component.im.query.ResultSet;
 import org.openvpms.web.component.property.Property;
 import org.openvpms.web.component.util.ButtonFactory;
 import org.openvpms.web.component.util.ErrorHelper;
-import org.openvpms.web.component.focus.FocusCommand;
-import org.openvpms.web.resource.util.Messages;
 
 import java.util.List;
 
@@ -133,9 +132,20 @@ public class IMObjectSelector<T extends IMObject> extends Selector<T> {
      * @param allowCreate determines if objects may be created
      * @param shortNames  the archetype short names to query
      */
-    public IMObjectSelector(String type, boolean allowCreate,
-                            String... shortNames) {
-        super(ButtonStyle.RIGHT, true);
+    public IMObjectSelector(String type, boolean allowCreate, String... shortNames) {
+        this(type, allowCreate, ButtonStyle.RIGHT, shortNames);
+    }
+
+    /**
+     * Constructs a new <tt>IMObjectSelector</tt>.
+     *
+     * @param type        display name for the types of objects this may select
+     * @param allowCreate determines if objects may be created
+     * @param style       the button style
+     * @param shortNames  the archetype short names to query
+     */
+    public IMObjectSelector(String type, boolean allowCreate, ButtonStyle style, String... shortNames) {
+        super(style, true);
         setFormat(Format.NAME);
         this.type = type;
         this.shortNames = shortNames;
@@ -306,20 +316,9 @@ public class IMObjectSelector<T extends IMObject> extends Selector<T> {
     }
 
     /**
-     * Creates a new browser dialog.
-     *
-     * @param browser the browser
-     * @return a new dialog for the browser
-     */
-    protected BrowserDialog<T> createBrowserDialog(Browser<T> browser) {
-        String title = Messages.get("imobject.select.title", type);
-        return new BrowserDialog<T>(title, browser);
-    }
-
-    /**
      * Invoked when an object is selected via a browser.
      *
-     * @param object the selected object
+     * @param object  the selected object
      * @param browser the browser
      */
     protected void onSelected(T object, Browser<T> browser) {
@@ -386,9 +385,10 @@ public class IMObjectSelector<T extends IMObject> extends Selector<T> {
     /**
      * Creates the select button.
      *
+     * @param buttonId the button identifier. Ignored for this implementation
      * @return the select button
      */
-    protected Button createSelectButton() {
+    protected Button createSelectButton(String buttonId) {
         return ButtonFactory.create(null, "select");
     }
 

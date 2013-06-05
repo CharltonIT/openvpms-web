@@ -39,7 +39,6 @@ import org.openvpms.web.component.im.lookup.NodeLookupQuery;
 import org.openvpms.web.component.im.util.LookupNameHelper;
 import org.openvpms.web.component.im.view.ComponentState;
 import org.openvpms.web.component.im.view.act.ActLayoutStrategy;
-import org.openvpms.web.component.property.DelegatingProperty;
 import org.openvpms.web.component.property.Property;
 
 import java.util.List;
@@ -101,7 +100,7 @@ public class OrderEditor extends FinancialActEditor {
      */
     protected void onItemsChanged() {
         super.onItemsChanged();
-        List<Act> acts = getEditor().getCurrentActs();
+        List<Act> acts = getItems().getCurrentActs();
         checkDeliveryStatus(acts);
     }
 
@@ -112,7 +111,7 @@ public class OrderEditor extends FinancialActEditor {
      */
     @Override
     protected IMObjectLayoutStrategy createLayoutStrategy() {
-        return new LayoutStrategy(getEditor());
+        return new LayoutStrategy(getItems());
     }
 
     /**
@@ -122,8 +121,7 @@ public class OrderEditor extends FinancialActEditor {
      */
     private void checkDeliveryStatus(List<Act> acts) {
         Property deliveryStatus = getProperty("deliveryStatus");
-        DeliveryStatus current
-                = DeliveryStatus.valueOf((String) deliveryStatus.getValue());
+        DeliveryStatus current = DeliveryStatus.valueOf((String) deliveryStatus.getValue());
         DeliveryStatus newStatus = null;
         for (Act act : acts) {
             FinancialAct item = (FinancialAct) act;
@@ -190,15 +188,6 @@ public class OrderEditor extends FinancialActEditor {
             return state;
         }
 
-        private Property createReadOnly(Property property) {
-            property = new DelegatingProperty(property) {
-                @Override
-                public boolean isReadOnly() {
-                    return true;
-                }
-            };
-            return property;
-        }
     }
 
 }

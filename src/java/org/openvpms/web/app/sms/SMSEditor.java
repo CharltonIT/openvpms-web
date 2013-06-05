@@ -12,8 +12,6 @@
  *  License.
  *
  *  Copyright 2011 (C) OpenVPMS Ltd. All Rights Reserved.
- *
- *  $Id: $
  */
 
 package org.openvpms.web.app.sms;
@@ -22,17 +20,18 @@ import nextapp.echo2.app.Component;
 import nextapp.echo2.app.SelectField;
 import nextapp.echo2.app.event.ActionEvent;
 import org.apache.commons.lang.StringUtils;
+import org.openvpms.component.business.domain.im.party.Contact;
+import org.openvpms.component.business.service.archetype.helper.IMObjectBean;
 import org.openvpms.sms.Connection;
 import org.openvpms.sms.ConnectionFactory;
 import org.openvpms.sms.SMSException;
-import org.openvpms.web.component.echo.SMSTextArea;
+import org.openvpms.web.component.echo.CountedTextArea;
 import org.openvpms.web.component.echo.TextField;
 import org.openvpms.web.component.event.ActionListener;
 import org.openvpms.web.component.focus.FocusGroup;
 import org.openvpms.web.component.property.AbstractModifiable;
 import org.openvpms.web.component.property.ModifiableListener;
 import org.openvpms.web.component.property.ModifiableListeners;
-import org.openvpms.web.component.property.Property;
 import org.openvpms.web.component.property.SimpleProperty;
 import org.openvpms.web.component.property.StringPropertyTransformer;
 import org.openvpms.web.component.property.Validator;
@@ -40,15 +39,19 @@ import org.openvpms.web.component.util.GridFactory;
 import org.openvpms.web.component.util.LabelFactory;
 import org.openvpms.web.component.util.SelectFieldFactory;
 import org.openvpms.web.component.util.TextComponentFactory;
+import org.openvpms.web.resource.util.Messages;
 import org.openvpms.web.resource.util.Styles;
 import org.openvpms.web.system.ServiceHelper;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 
 /**
  * An editor for SMS messages.
  *
- * @author <a href="mailto:support@openvpms.org">OpenVPMS Team</a>
- * @version $LastChangedDate: $
+ * @author Tim Anderson
  */
 public class SMSEditor extends AbstractModifiable {
 
@@ -65,12 +68,12 @@ public class SMSEditor extends AbstractModifiable {
     /**
      * The text message.
      */
-    private SMSTextArea message;
+    private CountedTextArea message;
 
     /**
      * The text property. Used to support macro expansion.
      */
-    private Property property;
+    private SimpleProperty property;
 
     /**
      * Determines if this has been modified.
@@ -88,10 +91,16 @@ public class SMSEditor extends AbstractModifiable {
     private FocusGroup focus;
 
     /**
-     * Constructs an <tt>SMSEditor</tt>.
+     * Maximum SMS length.
+     */
+    private static final int MAX_LENGTH = 160;
+
+
+    /**
+     * Constructs an {@code SMSEditor}.
      */
     public SMSEditor() {
-        this(null);
+        this(Collections.<Contact>emptyList());
     }
 
     /**
@@ -100,23 +109,23 @@ public class SMSEditor extends AbstractModifiable {
      * If no phone numbers are supplied, the phone number will be editable, otherwise it will be read-only.
      * If there are multiple phone numbers, they will be displayed in a dropdown, with the first no. as the default
      *
-     * @param numbers the available numbers. May be <tt>null</tt>
+     * @param contacts the available mobile contacts. May be <tt>null</tt>
      */
-    public SMSEditor(String[] numbers) {
-        int length = (numbers == null) ? 0 : numbers.length;
+    public SMSEditor(List<Contact> contacts) {
+        int length = (contacts == null) ? 0 : contacts.size();
         if (length <= 1) {
-            phone = TextComponentFactory.create(12);
+            phone = TextComponentFactory.create(20);
             phone.addActionListener(new ActionListener() {
                 public void onAction(ActionEvent event) {
                     onModified();
                 }
             });
             if (length == 1) {
-                phone.setText(numbers[0]);
+                phone.setText(formatPhone(contacts.get(0)));
                 phone.setEnabled(false);
             }
         } else {
-            phoneSelector = SelectFieldFactory.create(numbers);
+            phoneSelector = SelectFieldFactory.create(formatPhones(contacts));
             phoneSelector.addActionListener(new ActionListener() {
                 public void onAction(ActionEvent event) {
                     onModified();
@@ -124,8 +133,9 @@ public class SMSEditor extends AbstractModifiable {
             });
         }
         property = new SimpleProperty("property", String.class);
+        property.setMaxLength(MAX_LENGTH);
         property.setTransformer(new StringPropertyTransformer(property, new Object(), false));
-        message = new BoundSMSTextArea(property, 40, 15);
+        message = new BoundCountedTextArea(property, 40, 15);
         message.setStyleName(Styles.DEFAULT);
         message.addActionListener(new ActionListener() {
             public void onAction(ActionEvent event) {
@@ -165,19 +175,6 @@ public class SMSEditor extends AbstractModifiable {
     }
 
     /**
-     * Sets the phone number to send to.
-     *
-     * @param phone the phone number
-     */
-    public void setPhone(String phone) {
-        if (this.phone != null) {
-            this.phone.setText(phone);
-        } else {
-            phoneSelector.setSelectedItem(phone);
-        }
-    }
-
-    /**
      * Returns the phone number.
      *
      * @return the phone number. May be <tt>null</tt>
@@ -188,6 +185,10 @@ public class SMSEditor extends AbstractModifiable {
             result = phone.getText();
         } else if (phoneSelector.getSelectedItem() != null) {
             result = phoneSelector.getSelectedItem().toString();
+        }
+        if (result != null) {
+            // strip any spaces, hyphens, and brackets, and any characters after the last digit.
+            result = result.replaceAll("[\\s\\-()]", "").replaceAll("[^\\d].*", "");
         }
         return result;
     }
@@ -282,6 +283,51 @@ public class SMSEditor extends AbstractModifiable {
      */
     protected boolean doValidation(Validator validator) {
         return !StringUtils.isEmpty(getPhone()) && !StringUtils.isEmpty(getMessage());
+    }
+
+    /**
+     * Formats phone numbers that are flagged for SMS messaging.
+     * <p/>
+     * The preferred no.s are at the head of the list
+     *
+     * @param contacts the SMS contacts
+     * @return a list of phone numbers
+     */
+    private String[] formatPhones(List<Contact> contacts) {
+        List<String> phones = new ArrayList<String>();
+        String preferred = null;
+        for (Contact contact : contacts) {
+            String phone = formatPhone(contact);
+            IMObjectBean bean = new IMObjectBean(contact);
+            if (bean.getBoolean("preferred")) {
+                preferred = phone;
+            }
+            phones.add(phone);
+        }
+        Collections.sort(phones);
+        if (preferred != null && !phones.get(0).equals(preferred)) {
+            phones.remove(preferred);
+            phones.add(0, preferred);
+        }
+        return phones.toArray(new String[phones.size()]);
+    }
+
+    /**
+     * Formats a mobile phone number.
+     *
+     * @param contact the phone contact
+     * @return a formatted number, including an area code, if specified
+     */
+    private String formatPhone(Contact contact) {
+        IMObjectBean bean = new IMObjectBean(contact);
+        String areaCode = bean.getString("areaCode");
+        String phone = bean.getString("telephoneNumber");
+        if (!StringUtils.isEmpty(areaCode)) {
+            phone = Messages.get("phone.withAreaCode", areaCode, phone);
+        } else {
+            phone = Messages.get("phone.noAreaCode", phone);
+        }
+        return phone;
     }
 
     /**

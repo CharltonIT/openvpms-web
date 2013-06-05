@@ -49,6 +49,11 @@ import org.openvpms.web.resource.util.Messages;
 public class MessageQuery extends DateRangeActQuery<Act> {
 
     /**
+     * The archetypes to query.
+     */
+    public static final String[] ARCHETYPES = {MessageArchetypes.USER, MessageArchetypes.SYSTEM};
+
+    /**
      * The user selector.
      */
     private final IMObjectSelector<Entity> user;
@@ -58,11 +63,6 @@ public class MessageQuery extends DateRangeActQuery<Act> {
      * is selected.
      */
     private static final ActStatuses STATUSES = new ActStatuses(MessageArchetypes.USER);
-
-    /**
-     * The archetypes to query.
-     */
-    private static final String[] ARCHETYPES = {MessageArchetypes.USER, MessageArchetypes.SYSTEM};
 
     /**
      * The default statuses to query.
@@ -77,7 +77,6 @@ public class MessageQuery extends DateRangeActQuery<Act> {
      */
     public MessageQuery(Entity user) {
         super(user, "to", "participation.user", ARCHETYPES, STATUSES, Act.class);
-        setStatuses(DEFAULT_STATUSES);
 
         this.user = new IMObjectSelector<Entity>(Messages.get("messaging.user"), UserArchetypes.USER);
         this.user.setListener(new AbstractIMObjectSelectorListener<Entity>() {
@@ -102,8 +101,7 @@ public class MessageQuery extends DateRangeActQuery<Act> {
         ParticipantConstraint[] participants;
         if (user.isValid()) {
             if (getEntityId() != null) {
-                participants = new ParticipantConstraint[]{
-                        getParticipantConstraint()};
+                participants = new ParticipantConstraint[]{getParticipantConstraint()};
             } else {
                 participants = new ParticipantConstraint[0];
             }
@@ -154,19 +152,18 @@ public class MessageQuery extends DateRangeActQuery<Act> {
     }
 
     /**
-     * Invoked when a status is selected.
+     * Returns the act statuses to query.
+     * <p/>
+     * If the status is <em>PENDING</em>, this also includes <em>READ</em> acts.
+     *
+     * @return the act statuses to query
      */
     @Override
-    protected void onStatusChanged() {
-        boolean updated = false;
-        if (getStatusSelector() != null) {
-            if (MessageStatus.PENDING.equals(getStatusSelector().getSelectedCode())) {
-                setStatuses(DEFAULT_STATUSES);
-                updated = true;
-            }
+    protected String[] getStatuses() {
+        String[] statuses = super.getStatuses();
+        if (statuses.length == 1 && statuses[0].equals(MessageStatus.PENDING)) {
+            statuses = DEFAULT_STATUSES;
         }
-        if (!updated) {
-            super.onStatusChanged();
-        }
+        return statuses;
     }
 }

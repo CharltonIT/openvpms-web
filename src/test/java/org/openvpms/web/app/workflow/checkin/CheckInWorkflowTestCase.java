@@ -18,9 +18,6 @@
 
 package org.openvpms.web.app.workflow.checkin;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
 import org.junit.Before;
 import org.junit.Test;
 import org.openvpms.archetype.rules.act.ActStatus;
@@ -33,8 +30,6 @@ import org.openvpms.component.business.domain.im.common.Entity;
 import org.openvpms.component.business.domain.im.common.IMObject;
 import org.openvpms.component.business.domain.im.party.Party;
 import org.openvpms.component.business.domain.im.security.User;
-import static org.openvpms.web.app.workflow.WorkflowTestHelper.createAppointment;
-import static org.openvpms.web.app.workflow.WorkflowTestHelper.createWorkList;
 import org.openvpms.web.app.workflow.WorkflowTestHelper;
 import org.openvpms.web.component.app.Context;
 import org.openvpms.web.component.app.LocalContext;
@@ -42,9 +37,15 @@ import org.openvpms.web.component.dialog.PopupDialog;
 import org.openvpms.web.component.im.edit.EditDialog;
 import org.openvpms.web.component.im.query.BrowserDialog;
 import org.openvpms.web.test.AbstractAppTest;
-import static org.openvpms.web.test.EchoTestHelper.fireDialogButton;
 
 import java.math.BigDecimal;
+
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.openvpms.web.app.workflow.WorkflowTestHelper.createAppointment;
+import static org.openvpms.web.app.workflow.WorkflowTestHelper.createWorkList;
+import static org.openvpms.web.test.EchoTestHelper.fireDialogButton;
 
 
 /**
@@ -99,14 +100,14 @@ public class CheckInWorkflowTestCase extends AbstractAppTest {
         workflow.selectWorkList(workList, customer, patient);
 
         // add the patient weight
-        workflow.addWeight(patient, BigDecimal.valueOf(10));
+        workflow.addWeight(patient, BigDecimal.valueOf(10), clinician);
 
         workflow.printDocumentForm(PopupDialog.SKIP_ID);
 
         // edit the clinical event
-        BrowserDialog eventDialog = workflow.editClinicalEvent();
+        PopupDialog eventDialog = workflow.editVisit();
         fireDialogButton(eventDialog, PopupDialog.OK_ID);
-        workflow.checkEvent(patient, clinician, ActStatus.COMPLETED);
+        workflow.checkEvent(patient, clinician, ActStatus.IN_PROGRESS);
 
         // verify the workflow is complete
         workflow.checkComplete(true, customer, patient, context);
@@ -126,14 +127,14 @@ public class CheckInWorkflowTestCase extends AbstractAppTest {
 
         workflow.selectWorkList(workList, customer, patient);
 
-        workflow.addWeight(patient, BigDecimal.valueOf(20));
+        workflow.addWeight(patient, BigDecimal.valueOf(20), clinician);
 
         workflow.printDocumentForm(PopupDialog.SKIP_ID);
 
         // edit the clinical event
-        BrowserDialog eventDialog = workflow.editClinicalEvent();
+        PopupDialog eventDialog = workflow.editVisit();
         fireDialogButton(eventDialog, PopupDialog.OK_ID);
-        workflow.checkEvent(patient, clinician, ActStatus.COMPLETED);
+        workflow.checkEvent(patient, clinician, ActStatus.IN_PROGRESS);
         workflow.checkComplete(true, customer, patient, context);
     }
 
@@ -159,13 +160,13 @@ public class CheckInWorkflowTestCase extends AbstractAppTest {
 
         workflow.selectWorkList(workList, customer, newPatient);
 
-        workflow.addWeight(newPatient, BigDecimal.ONE);
+        workflow.addWeight(newPatient, BigDecimal.ONE, clinician);
 
         workflow.printDocumentForm(PopupDialog.SKIP_ID);
 
-        BrowserDialog eventDialog = workflow.editClinicalEvent();
+        PopupDialog eventDialog = workflow.editVisit();
         fireDialogButton(eventDialog, PopupDialog.OK_ID);
-        workflow.checkEvent(newPatient, clinician, ActStatus.COMPLETED);
+        workflow.checkEvent(newPatient, clinician, ActStatus.IN_PROGRESS);
 
         workflow.checkComplete(true, customer, newPatient, context);
     }
@@ -238,18 +239,37 @@ public class CheckInWorkflowTestCase extends AbstractAppTest {
         assertNull(workflow.getContext().getObject(ScheduleArchetypes.TASK));
 
         // add the patient weight
-        workflow.addWeight(patient, BigDecimal.valueOf(10));
+        workflow.addWeight(patient, BigDecimal.valueOf(10), clinician);
 
         // skip form printing
         workflow.printDocumentForm(PopupDialog.SKIP_ID);
 
         // edit the clinical event
-        BrowserDialog eventDialog = workflow.editClinicalEvent();
+        PopupDialog eventDialog = workflow.editVisit();
         fireDialogButton(eventDialog, PopupDialog.OK_ID);
-        workflow.checkEvent(patient, clinician, ActStatus.COMPLETED);
+        workflow.checkEvent(patient, clinician, ActStatus.IN_PROGRESS);
 
         // verify the workflow is complete
         workflow.checkComplete(true, customer, patient, context);
+    }
+
+    /**
+     * Verifies that if there is no clinician in the appointment, it defaults to that of the context.
+     */
+    @Test
+    public void testDefaultClinicianFromContext() {
+        Act appointment = createAppointment(customer, patient, null);  // no clinician on appointment
+        context.setClinician(clinician);
+        checkClinician(appointment, clinician, context);
+    }
+
+    /**
+     * Verifies that if there is no clinician on the appointment or context, then no clinician is populated.
+     */
+    @Test
+    public void testNoClinician() {
+        Act appointment = createAppointment(customer, patient, null);  // no clinician on appointment
+        checkClinician(appointment, null, context);
     }
 
     /**
@@ -321,9 +341,9 @@ public class CheckInWorkflowTestCase extends AbstractAppTest {
         workflow.printDocumentForm(PopupDialog.SKIP_ID);
 
         // edit the clinical event
-        BrowserDialog eventDialog = workflow.editClinicalEvent();
+        PopupDialog eventDialog = workflow.editVisit();
         fireDialogButton(eventDialog, PopupDialog.OK_ID);
-        workflow.checkEvent(patient, clinician, ActStatus.COMPLETED);
+        workflow.checkEvent(patient, clinician, ActStatus.IN_PROGRESS);
 
         workflow.checkComplete(true, customer, patient, context);
     }
@@ -357,6 +377,7 @@ public class CheckInWorkflowTestCase extends AbstractAppTest {
         Entity taskType = ScheduleTestHelper.createTaskType();
         workList = createWorkList(taskType, 1);
         context = new LocalContext();
+        context.setLocation(TestHelper.createLocation());
         context.setUser(user);
     }
 
@@ -409,7 +430,7 @@ public class CheckInWorkflowTestCase extends AbstractAppTest {
 
         workflow.selectWorkList(workList, customer, patient);
 
-        workflow.addWeight(patient, BigDecimal.ONE);
+        workflow.addWeight(patient, BigDecimal.ONE, clinician);
 
         BrowserDialog<Act> dialog = workflow.getSelectionDialog();
         WorkflowTestHelper.cancelDialog(dialog, userClose);
@@ -430,16 +451,17 @@ public class CheckInWorkflowTestCase extends AbstractAppTest {
 
         workflow.selectWorkList(workList, customer, patient);
 
-        workflow.addWeight(patient, BigDecimal.ONE);
+        workflow.addWeight(patient, BigDecimal.ONE, clinician);
 
         workflow.printDocumentForm(PopupDialog.SKIP_ID);
 
         // edit the clinical event
-        BrowserDialog eventDialog = workflow.editClinicalEvent();
+        PopupDialog eventDialog = workflow.editVisit();
         WorkflowTestHelper.cancelDialog(eventDialog, userClose);
 
         // event is saved regardless of cancel
         workflow.checkEvent(patient, clinician, ActStatus.COMPLETED);
+        workflow.checkInvoice(clinician, BigDecimal.ZERO, ActStatus.IN_PROGRESS, false);
         workflow.checkComplete(false, null, null, context);
     }
 
@@ -459,6 +481,32 @@ public class CheckInWorkflowTestCase extends AbstractAppTest {
         EditDialog editor = workflow.getWeightEditor();
         WorkflowTestHelper.cancelDialog(editor, userClose);
         workflow.checkComplete(false, null, null, context);
+    }
+
+    /**
+     * Verifies that the clinician is populated correctly.
+     *
+     * @param appointment the appointment
+     * @param clinician   the expected clinician. May be {@code null}
+     * @param context     the context
+     */
+    private void checkClinician(Act appointment, User clinician, Context context) {
+        CheckInWorkflowRunner workflow = new CheckInWorkflowRunner(appointment, context);
+        workflow.setWorkList(workList);        // need to pre-set work list so it can be selected in popup
+        workflow.start();
+
+        workflow.selectWorkList(workList, customer, patient);
+
+        workflow.addWeight(patient, BigDecimal.valueOf(20), clinician); // clinician defaults from context
+
+        workflow.printDocumentForm(PopupDialog.SKIP_ID);
+
+        // edit the clinical event
+        PopupDialog eventDialog = workflow.editVisit();
+        fireDialogButton(eventDialog, PopupDialog.OK_ID);
+        workflow.checkEvent(patient, clinician, ActStatus.IN_PROGRESS);
+        workflow.checkInvoice(clinician, BigDecimal.ZERO, ActStatus.IN_PROGRESS, true);
+        workflow.checkComplete(true, customer, patient, context);
     }
 
 }

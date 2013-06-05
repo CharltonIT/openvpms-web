@@ -22,6 +22,7 @@ import nextapp.echo2.app.Button;
 import nextapp.echo2.app.event.ActionEvent;
 import org.openvpms.component.business.domain.im.party.Party;
 import org.openvpms.component.business.domain.im.security.User;
+import org.openvpms.web.component.im.edit.DefaultIMObjectActions;
 import org.openvpms.web.component.subsystem.AbstractViewCRUDWindow;
 import org.openvpms.web.app.workflow.checkin.CheckInWorkflow;
 import org.openvpms.web.app.workflow.merge.MergeWorkflow;
@@ -62,7 +63,7 @@ public class InformationCRUDWindow extends AbstractViewCRUDWindow<Party> {
      * @param archetypes the archetypes that this may create
      */
     public InformationCRUDWindow(Archetypes<Party> archetypes) {
-        super(archetypes);
+        super(archetypes, DefaultIMObjectActions.<Party>getInstance());
     }
 
     /**

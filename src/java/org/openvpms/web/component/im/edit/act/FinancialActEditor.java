@@ -18,24 +18,25 @@
 
 package org.openvpms.web.component.im.edit.act;
 
+import org.apache.commons.lang.builder.ReflectionToStringBuilder;
+import org.apache.commons.lang.builder.ToStringStyle;
+import org.apache.commons.logging.Log;
+import org.apache.commons.logging.LogFactory;
 import org.openvpms.archetype.rules.act.ActCalculator;
 import org.openvpms.component.business.domain.im.act.Act;
 import org.openvpms.component.business.domain.im.act.FinancialAct;
 import org.openvpms.component.business.domain.im.common.IMObject;
 import org.openvpms.component.business.domain.im.security.User;
+import org.openvpms.web.component.app.GlobalContext;
 import org.openvpms.web.component.im.act.ActHelper;
-import org.openvpms.web.component.im.layout.LayoutContext;
 import org.openvpms.web.component.im.edit.IMObjectEditor;
+import org.openvpms.web.component.im.layout.LayoutContext;
 import org.openvpms.web.component.property.Property;
 import org.openvpms.web.component.property.Validator;
 import org.openvpms.web.component.property.ValidatorError;
-import org.openvpms.web.component.app.GlobalContext;
+import org.openvpms.web.component.util.NumberFormatter;
 import org.openvpms.web.resource.util.Messages;
 import org.openvpms.web.system.ServiceHelper;
-import org.apache.commons.logging.Log;
-import org.apache.commons.logging.LogFactory;
-import org.apache.commons.lang.builder.ReflectionToStringBuilder;
-import org.apache.commons.lang.builder.ToStringStyle;
 
 import java.math.BigDecimal;
 import java.util.List;
@@ -56,7 +57,7 @@ public class FinancialActEditor extends ActEditor {
     /**
      * The logger.
      */
-    private static final Log log = LogFactory.getLog(FinancialAct.class);
+    private static final Log log = LogFactory.getLog(FinancialActEditor.class);
 
     /**
      * Constructs a <tt>FinancialActEditor</tt>.
@@ -65,8 +66,7 @@ public class FinancialActEditor extends ActEditor {
      * @param parent  the parent object. May be <tt>null</tt>
      * @param context the layout context. May be <tt>null</tt>
      */
-    protected FinancialActEditor(FinancialAct act, IMObject parent,
-                                 LayoutContext context) {
+    protected FinancialActEditor(FinancialAct act, IMObject parent, LayoutContext context) {
         super(act, parent, context);
         recalculateTax();
     }
@@ -77,7 +77,7 @@ public class FinancialActEditor extends ActEditor {
     public void calculateTax() {
         Property taxAmount = getProperty("tax");
         if (taxAmount != null) {
-            List<Act> acts = getEditor().getActs();
+            List<Act> acts = getItems().getActs();
             BigDecimal tax = ActHelper.sum((Act) getObject(), acts, "tax");
             taxAmount.setValue(tax);
         }
@@ -114,14 +114,18 @@ public class FinancialActEditor extends ActEditor {
         FinancialAct act = (FinancialAct) getObject();
         BigDecimal total = calc.getTotal(act);
 
-        List<Act> acts = getEditor().getActs();
+        List<Act> acts = getItems().getActs();
         // NOTE: the current act should be mapped into the collection if it has been edited
 
         BigDecimal sum = calc.sum(acts.iterator(), "total");
         result = total.compareTo(sum) == 0;
         if (!result) {
+            // need to pre-format the amounts as the Messages uses the browser's locale which may have different
+            // currency format
             String message = Messages.get("act.validation.totalMismatch", getProperty("amount").getDisplayName(),
-                                          total, getEditor().getProperty().getDisplayName(), sum);
+                                          NumberFormatter.formatCurrency(total),
+                                          getItems().getProperty().getDisplayName(),
+                                          NumberFormatter.formatCurrency(sum));
             validator.add(this, new ValidatorError(message));
             if (log.isWarnEnabled()) {
                 log.warn(message);
@@ -131,7 +135,7 @@ public class FinancialActEditor extends ActEditor {
                 for (int i = 0; i < acts.size(); ++i) {
                     log.warn("act item (" + (i + 1) + " of " + acts.size() + ") = " + format(acts.get(i)));
                 }
-                IMObjectEditor current = getEditor().getCurrentEditor();
+                IMObjectEditor current = getItems().getCurrentEditor();
                 if (current != null) {
                     log.warn("current act item = " + format(current.getObject()));
                 }
@@ -146,7 +150,7 @@ public class FinancialActEditor extends ActEditor {
     @Override
     protected void onItemsChanged() {
         Property amount = getProperty("amount");
-        BigDecimal value = ActHelper.sum((Act) getObject(), getEditor().getCurrentActs(), "total");
+        BigDecimal value = ActHelper.sum((Act) getObject(), getItems().getCurrentActs(), "total");
         amount.setValue(value);
         calculateTax();
     }
@@ -157,7 +161,7 @@ public class FinancialActEditor extends ActEditor {
     private void recalculateTax() {
         Property taxAmount = getProperty("tax");
         if (taxAmount != null) {
-            ActRelationshipCollectionEditor items = getEditor();
+            ActRelationshipCollectionEditor items = getItems();
             List<Act> acts = items.getActs();
             for (Act act : acts) {
                 // get the item editor. For CustomerInvoiceItemEditors, this

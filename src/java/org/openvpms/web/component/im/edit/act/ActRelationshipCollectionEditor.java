@@ -19,11 +19,7 @@
 package org.openvpms.web.component.im.edit.act;
 
 import org.openvpms.archetype.rules.act.ActCopyHandler;
-import static org.openvpms.archetype.rules.finance.account.CustomerAccountArchetypes.COUNTER_ITEM;
-import static org.openvpms.archetype.rules.finance.account.CustomerAccountArchetypes.CREDIT_ITEM;
-import static org.openvpms.archetype.rules.finance.account.CustomerAccountArchetypes.INVOICE_ITEM;
-import static org.openvpms.archetype.rules.product.ProductArchetypes.PRODUCT_PARTICIPATION;
-import static org.openvpms.archetype.rules.product.ProductArchetypes.TEMPLATE;
+import org.openvpms.archetype.rules.product.ProductArchetypes;
 import org.openvpms.component.business.domain.im.act.Act;
 import org.openvpms.component.business.domain.im.act.ActRelationship;
 import org.openvpms.component.business.domain.im.archetype.descriptor.ArchetypeDescriptor;
@@ -32,6 +28,7 @@ import org.openvpms.component.business.domain.im.common.EntityRelationship;
 import org.openvpms.component.business.domain.im.common.IMObject;
 import org.openvpms.component.business.domain.im.common.IMObjectReference;
 import org.openvpms.component.business.domain.im.common.Participation;
+import org.openvpms.component.business.domain.im.product.Product;
 import org.openvpms.component.business.service.archetype.IArchetypeService;
 import org.openvpms.component.business.service.archetype.helper.IMObjectBean;
 import org.openvpms.component.business.service.archetype.helper.IMObjectCopier;
@@ -41,7 +38,6 @@ import org.openvpms.web.component.im.edit.IMObjectEditor;
 import org.openvpms.web.component.im.layout.DefaultLayoutContext;
 import org.openvpms.web.component.im.layout.LayoutContext;
 import org.openvpms.web.component.im.relationship.MultipleRelationshipCollectionTargetEditor;
-import org.openvpms.web.component.im.util.IMObjectHelper;
 import org.openvpms.web.component.im.view.ReadOnlyComponentFactory;
 import org.openvpms.web.component.property.CollectionProperty;
 import org.openvpms.web.component.property.Validator;
@@ -54,6 +50,11 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+
+import static org.openvpms.archetype.rules.finance.account.CustomerAccountArchetypes.COUNTER_ITEM;
+import static org.openvpms.archetype.rules.finance.account.CustomerAccountArchetypes.CREDIT_ITEM;
+import static org.openvpms.archetype.rules.finance.account.CustomerAccountArchetypes.INVOICE_ITEM;
+import static org.openvpms.archetype.rules.product.ProductArchetypes.TEMPLATE;
 
 
 /**
@@ -75,6 +76,16 @@ public class ActRelationshipCollectionEditor
      */
     private boolean excludeDefaultValueObject = true;
 
+    /**
+     * Listener for template product expansion events. May be {@code null}
+     */
+    private TemplateProductListener templateProductListener;
+
+    /**
+     * Listener for product change events.
+     */
+    private final ProductListener productListener;
+
 
     /**
      * Constructs an <tt>ActRelationshipCollectionEditor</tt>.
@@ -86,6 +97,11 @@ public class ActRelationshipCollectionEditor
     public ActRelationshipCollectionEditor(CollectionProperty property,
                                            Act act, LayoutContext context) {
         super(new ActRelationshipCollectionPropertyEditor(property, act), act, context);
+        productListener = new ProductListener() {
+            public void productChanged(ActItemEditor editor, Product product) {
+                onProductChanged(editor, product);
+            }
+        };
     }
 
     /**
@@ -122,6 +138,31 @@ public class ActRelationshipCollectionEditor
     }
 
     /**
+     * Registers a listener for template product expansion events.
+     *
+     * @param listener the listener
+     */
+    public void setTemplateProductListener(TemplateProductListener listener) {
+        templateProductListener = listener;
+    }
+
+    /**
+     * Creates a new editor.
+     *
+     * @param object  the object to edit
+     * @param context the layout context
+     * @return an editor to edit <code>object</code>
+     */
+    @Override
+    public IMObjectEditor createEditor(IMObject object, LayoutContext context) {
+        IMObjectEditor editor = super.createEditor(object, context);
+        if (editor instanceof ActItemEditor) {
+            ((ActItemEditor) editor).setProductListener(productListener);
+        }
+        return editor;
+    }
+
+    /**
      * Adds any object being edited to the collection, if it is valid.
      *
      * @param validator the validator
@@ -155,30 +196,15 @@ public class ActRelationshipCollectionEditor
     @Override
     public boolean addEdited(IMObjectEditor editor) {
         boolean result = false;
-        Act act = (Act) editor.getObject();
         if (needsTemplateExpansion(editor)) {
-            IMObjectReference product = ((ActItemEditor) editor).getProductRef();
+            Product product = ((ActItemEditor) editor).getProduct();
             if (TypeHelper.isA(product, TEMPLATE)) {
-                result = expandTemplate((ActItemEditor) editor, act, product);
-                if (result) {
-                    populateTable();
-                    // template act is replaced with the first product in
-                    // the template, so try and select it in the table
-                    IMObject object = editor.getObject();
-                    setSelected(object);
-                }
+                result = expandTemplate((ActItemEditor) editor, product);
             }
         } else {
             result = super.addEdited(editor);
         }
         return result;
-    }
-
-    /**
-     * Edits the selected object.
-     */
-    public void editSelected() {
-        onEdit();
     }
 
     /**
@@ -297,89 +323,112 @@ public class ActRelationshipCollectionEditor
      * @return the collection property editor
      */
     protected ActRelationshipCollectionPropertyEditor getEditor() {
-        return (ActRelationshipCollectionPropertyEditor)
-                getCollectionPropertyEditor();
+        return (ActRelationshipCollectionPropertyEditor) getCollectionPropertyEditor();
     }
 
     /**
-     * Determines if an act contains a product template.
+     * Creates an act item for each product referred to in its template.
      *
-     * @param act the act
-     * @return <tt>true</tt> if the act contains a product template,
-     *         otherwise <tt>false</tt>
-     */
-    protected IMObjectReference getProductTemplate(Act act) {
-        Participation participant = IMObjectHelper.getObject(
-                PRODUCT_PARTICIPATION, act.getParticipations());
-        if (participant != null) {
-            IMObjectReference ref = participant.getEntity();
-            if (TypeHelper.isA(ref, TEMPLATE)) {
-                return ref;
-            }
-        }
-        return null;
-    }
-
-    /**
-     * Copies an act item for each product referred to in its template.
-     *
-     * @param editor      the editor
-     * @param act         the act
-     * @param templateRef a reference to the template
+     * @param editor   the editor
+     * @param template the template. May be {@code null}
      * @return <tt>true</tt> if the template was expanded; otherwise <tt>false</tt>
      */
-    protected boolean expandTemplate(ActItemEditor editor, Act act, IMObjectReference templateRef) {
+    protected boolean expandTemplate(ActItemEditor editor, Product template) {
         boolean result = false;
-        IMObject template = getObject(templateRef);
         if (template != null) {
-            ActRelationshipCollectionPropertyEditor collection = getEditor();
-
-            IMObjectCopier copier = new IMObjectCopier(new ActItemCopyHandler());
-            IMObjectBean bean = new IMObjectBean(template);
-            List<IMObject> values = bean.getValues("includes");
-            Act copy = act; // replace the existing act with the first
-            Date startTime = act.getActivityStartTime();
-            // templated product
-            for (IMObject value : values) {
-                EntityRelationship relationship = (EntityRelationship) value;
-                IMObjectReference product = relationship.getTarget();
-
-                if (copy == null) {
-                    // copy the act, and associate the product
-                    List<IMObject> objects = copier.apply(act);
-                    copy = (Act) objects.get(0);
-                    LayoutContext context = new DefaultLayoutContext();
-                    context.setComponentFactory(new ReadOnlyComponentFactory(context));
-                    context.setCache(getContext().getCache());
-                    editor = (ActItemEditor) createEditor(copy, context);
-
-                    // reset the start-time, which may have been set by the editor
-                    copy.setActivityStartTime(startTime);
-
-                    // create the component - must do this to ensure that the product editor is created
-                    editor.getComponent();
-                }
-                editor.setProductRef(product);
-
-                IMObjectBean relationshipBean = new IMObjectBean(relationship);
-                if (relationshipBean.hasNode("includeQty")) {
-                    BigDecimal quantity = relationshipBean.getBigDecimal("includeQty");
-                    if (quantity != null) {
-                        editor.setQuantity(quantity);
-                    }
-                }
-
-                collection.add(copy);
-                collection.setEditor(copy, editor);
-                copy = null;
-                result = true;
+            List<Act> items = createTemplateActs(editor, template);
+            result = !items.isEmpty();
+            if (result && templateProductListener != null) {
+                templateProductListener.expanded(template);
             }
         }
         if (!result) {
             // template failed to expand. Clear the product reference so its not saved.
             editor.setProductRef(null);
+        } else {
+            populateTable();
+            // template act is replaced with the first product in the template, so try and select it in the table
+            IMObject object = editor.getObject();
+            setSelected(object);
         }
         return result;
+    }
+
+    /**
+     * Copies an act item for each product referred to in its template.
+     *
+     * @param editor   the editor
+     * @param template the product template
+     * @return the acts generated from the template
+     */
+    protected List<Act> createTemplateActs(ActItemEditor editor, Product template) {
+        List<Act> result = new ArrayList<Act>();
+        ActRelationshipCollectionPropertyEditor collection = getEditor();
+
+        IMObjectCopier copier = new IMObjectCopier(new ActItemCopyHandler());
+        IMObjectBean bean = new IMObjectBean(template);
+        List<IMObject> values = bean.getValues("includes");
+        Act act = (Act) editor.getObject();
+        Act copy = act; // replace the existing act with the first
+        Date startTime = act.getActivityStartTime();
+        for (IMObject value : values) {
+            EntityRelationship relationship = (EntityRelationship) value;
+            IMObjectReference product = relationship.getTarget();
+
+            if (copy == null) {
+                // copy the act, and associate the product
+                List<IMObject> objects = copier.apply(act);
+                copy = (Act) objects.get(0);
+                LayoutContext context = new DefaultLayoutContext();
+                context.setComponentFactory(new ReadOnlyComponentFactory(context));
+                context.setCache(getContext().getCache());
+                editor = (ActItemEditor) createEditor(copy, context);
+
+                // reset the start-time, which may have been set by the editor
+                copy.setActivityStartTime(startTime);
+
+                // create the component - must do this to ensure that the product editor is created
+                editor.getComponent();
+            }
+            editor.setProductRef(product);
+
+            IMObjectBean relationshipBean = new IMObjectBean(relationship);
+            if (relationshipBean.hasNode("includeQty")) {
+                BigDecimal quantity = relationshipBean.getBigDecimal("includeQty");
+                if (quantity != null) {
+                    editor.setQuantity(quantity);
+                }
+            }
+
+            collection.add(copy);
+            collection.setEditor(copy, editor);
+            result.add(copy);
+            copy = null;
+        }
+        return result;
+    }
+
+    /**
+     * Returns the listener for product change events.
+     *
+     * @return the product listener
+     */
+    protected ProductListener getProductListener() {
+        return productListener;
+    }
+
+    /**
+     * Invoked when a product changes.
+     * <p/>
+     * This expands any template products
+     *
+     * @param editor  the editor
+     * @param product the product.
+     */
+    private void onProductChanged(ActItemEditor editor, Product product) {
+        if (TypeHelper.isA(product, ProductArchetypes.TEMPLATE)) {
+            expandTemplate(editor, product);
+        }
     }
 
     /**
@@ -505,12 +554,11 @@ public class ActRelationshipCollectionEditor
         protected boolean isCopyable(ArchetypeDescriptor archetype,
                                      NodeDescriptor node, boolean source) {
             boolean result = super.isCopyable(archetype, node, source);
-            if (result && TypeHelper.isA(archetype, INVOICE_ITEM, CREDIT_ITEM,
-                                         COUNTER_ITEM)) {
+            if (result && TypeHelper.isA(archetype, INVOICE_ITEM, CREDIT_ITEM, COUNTER_ITEM)) {
                 String name = node.getName();
                 result = "quantity".equals(name) || "patient".equals(name)
-                         || "product".equals(name) || "author".equals(name)
-                         || "clinician".equals(name);
+                        || "product".equals(name) || "author".equals(name)
+                        || "clinician".equals(name);
             }
             return result;
         }

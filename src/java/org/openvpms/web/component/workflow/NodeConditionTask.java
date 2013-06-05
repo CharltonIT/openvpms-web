@@ -87,18 +87,19 @@ public class NodeConditionTask<T> extends NodeEvalTask<Boolean> {
         IMObject object = getObject(context);
         if (object == null) {
             notifyCancelled();
-        }
-        T value = (T) getValue(object);
-        boolean result;
-        if (expected instanceof Comparable && value != null) {
-            result = ((Comparable) expected).compareTo(value) == 0;
         } else {
-            result = ObjectUtils.equals(expected, value);
-        }
-        if (equals) {
-            setValue(result);
-        } else {
-            setValue(!result);
+            T value = (T) getValue(object);
+            boolean result;
+            if (expected instanceof Comparable && value != null) {
+                result = ((Comparable) expected).compareTo(value) == 0;
+            } else {
+                result = ObjectUtils.equals(expected, value);
+            }
+            if (equals) {
+                setValue(result);
+            } else {
+                setValue(!result);
+            }
         }
     }
 }

@@ -30,9 +30,19 @@ import org.openvpms.component.business.domain.im.common.IMObject;
 public class BasicSelector<T extends IMObject> extends Selector<T> {
 
     /**
-     * Constructs a new <tt>BasicSelector</tt>.
+     * Constructs a <tt>BasicSelector</tt>.
      */
     public BasicSelector() {
+        this("button.select");
+    }
+
+    /**
+     * Construct a <tt>BasicSelector</tt>.
+     *
+     * @param buttonId the button identifier
+     */
+    public BasicSelector(String buttonId) {
+        super(buttonId);
     }
 
     /**

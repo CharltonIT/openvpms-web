@@ -46,24 +46,15 @@ public class DeliveryEditor extends FinancialActEditor {
     }
 
     /**
-     * Sets the delivery status.
-     *
-     * @param status the status
-     */
-    public void setStatus(String status) {
-        getProperty("status").setValue(status);
-    }
-
-    /**
      * Adds a delivery item, associated with an order item.
      *
      * @param delivery the delivery item
      * @param order    the order item
      */
     public void addItem(FinancialAct delivery, FinancialAct order) {
-        ActRelationshipCollectionEditor items = getEditor();
+        ActRelationshipCollectionEditor items = getItems();
         items.add(delivery);
-        DeliveryItemEditor itemEditor = (DeliveryItemEditor) getEditor().getEditor(delivery);
+        DeliveryItemEditor itemEditor = (DeliveryItemEditor) getItems().getEditor(delivery);
         itemEditor.setOrderItem(order);
     }
 
@@ -93,7 +84,7 @@ public class DeliveryEditor extends FinancialActEditor {
      */
     @Override
     protected IMObjectLayoutStrategy createLayoutStrategy() {
-        return new DeliveryLayoutStrategy(getEditor());
+        return new DeliveryLayoutStrategy(getItems());
     }
 
 }

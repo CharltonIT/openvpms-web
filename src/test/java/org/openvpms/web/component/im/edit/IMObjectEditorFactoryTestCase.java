@@ -18,8 +18,6 @@
 
 package org.openvpms.web.component.im.edit;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
 import org.junit.Test;
 import org.openvpms.archetype.rules.party.ContactArchetypes;
 import org.openvpms.archetype.rules.workflow.MessageArchetypes;
@@ -36,7 +34,7 @@ import org.openvpms.web.app.customer.CustomerEditor;
 import org.openvpms.web.app.customer.PatientOwnerRelationshipEditor;
 import org.openvpms.web.app.customer.account.AdjustmentActEditor;
 import org.openvpms.web.app.customer.charge.CustomerChargeActEditor;
-import org.openvpms.web.app.customer.charge.CustomerChargeActItemEditor;
+import org.openvpms.web.app.customer.charge.DefaultCustomerChargeActItemEditor;
 import org.openvpms.web.app.customer.estimation.EstimationEditor;
 import org.openvpms.web.app.customer.estimation.EstimationItemEditor;
 import org.openvpms.web.app.patient.PatientEditor;
@@ -54,7 +52,7 @@ import org.openvpms.web.app.supplier.delivery.DeliveryEditor;
 import org.openvpms.web.app.supplier.delivery.DeliveryItemEditor;
 import org.openvpms.web.app.supplier.order.OrderEditor;
 import org.openvpms.web.app.supplier.order.OrderItemEditor;
-import org.openvpms.web.app.workflow.messaging.UserMessageActEditor;
+import org.openvpms.web.app.workflow.messaging.UserMessageEditor;
 import org.openvpms.web.component.im.contact.LocationEditor;
 import org.openvpms.web.component.im.doc.DocumentTemplateEditor;
 import org.openvpms.web.component.im.edit.act.DefaultParticipationEditor;
@@ -70,6 +68,9 @@ import org.openvpms.web.component.im.product.ProductReminderRelationshipEditor;
 import org.openvpms.web.component.im.relationship.EntityRelationshipEditor;
 import org.openvpms.web.system.ServiceHelper;
 import org.openvpms.web.test.AbstractAppTest;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 
 
 /**
@@ -115,7 +116,7 @@ public class IMObjectEditorFactoryTestCase extends AbstractAppTest {
                 checkCreate(shortName, DocumentTemplatePrinterEditor.class);
             } else if (shortName.equals("entityRelationship.supplierStockLocationESCI")) {
                 checkCreate(shortName, SupplierStockLocationRelationshipESCIEditor.class);
-            } else if (shortName.equals("entityRelationship.productReminder")){
+            } else if (shortName.equals("entityRelationship.productReminder")) {
                 checkCreate(shortName, ProductReminderRelationshipEditor.class);
             } else {
                 checkCreate(shortName, EntityRelationshipEditor.class);
@@ -192,7 +193,7 @@ public class IMObjectEditorFactoryTestCase extends AbstractAppTest {
     }
 
     /**
-     * Verfies that a {@link CustomerChargeActItemEditor} is created for
+     * Verfies that a {@link org.openvpms.web.app.customer.charge.DefaultCustomerChargeActItemEditor} is created for
      * <em>act.customerAccountInvoiceItem, act.customerAccountCreditItem and
      * act.customerAccountCounterItem</em>
      */
@@ -200,13 +201,13 @@ public class IMObjectEditorFactoryTestCase extends AbstractAppTest {
     public void testCreateCustomerIvoiceItemEditor() {
         checkCreate("act.customerAccountInvoiceItem",
                     "act.customerAccountChargesInvoice",
-                    CustomerChargeActItemEditor.class);
+                    DefaultCustomerChargeActItemEditor.class);
         checkCreate("act.customerAccountCreditItem",
                     "act.customerAccountChargesCredit",
-                    CustomerChargeActItemEditor.class);
+                    DefaultCustomerChargeActItemEditor.class);
         checkCreate("act.customerAccountCounterItem",
                     "act.customerAccountChargesCounter",
-                    CustomerChargeActItemEditor.class);
+                    DefaultCustomerChargeActItemEditor.class);
     }
 
     /**
@@ -397,12 +398,11 @@ public class IMObjectEditorFactoryTestCase extends AbstractAppTest {
     }
 
     /**
-     * Verifies that an {@link UserMessageActEditor} is created for
-     * <em>act.userMessage</em>
+     * Verifies that an {@link UserMessageEditor} is created for <em>act.userMessage</em>
      */
     @Test
     public void testCreateUserMessageActEditor() {
-        checkCreate(MessageArchetypes.USER, UserMessageActEditor.class);
+        checkCreate(MessageArchetypes.USER, UserMessageEditor.class);
     }
 
     /**
@@ -559,7 +559,7 @@ public class IMObjectEditorFactoryTestCase extends AbstractAppTest {
                       object);
         IMObject parent = service.create(parentShortName);
         assertNotNull("Failed to create object with shortname="
-                      + parentShortName, parent);
+                              + parentShortName, parent);
         IMObjectEditor editor = IMObjectEditorFactory.create(object, parent,
                                                              context);
         assertNotNull("Failed to create editor", editor);

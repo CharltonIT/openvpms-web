@@ -22,11 +22,14 @@ import org.openvpms.archetype.rules.patient.PatientArchetypes;
 import org.openvpms.component.business.domain.im.act.Act;
 import org.openvpms.component.business.domain.im.act.ActRelationship;
 import org.openvpms.component.business.service.archetype.helper.TypeHelper;
+import org.openvpms.web.app.patient.PatientMedicalRecordLinker;
+import org.openvpms.web.app.patient.PatientRecordCRUDWindow;
 import org.openvpms.web.app.subsystem.ActCRUDWindow;
 import org.openvpms.web.component.button.ButtonSet;
+import org.openvpms.web.component.im.edit.ActActions;
 import org.openvpms.web.component.im.util.Archetypes;
 import org.openvpms.web.component.im.util.IMObjectHelper;
-import org.openvpms.web.component.util.Retryer;
+import org.openvpms.web.component.retry.Retryer;
 import org.openvpms.web.resource.util.Messages;
 
 
@@ -50,7 +53,7 @@ public class ProblemRecordCRUDWindow extends ActCRUDWindow<Act>
      */
     public ProblemRecordCRUDWindow() {
         super(Archetypes.create(PatientArchetypes.CLINICAL_PROBLEM, Act.class,
-                                Messages.get("patient.record.createtype")));
+                                Messages.get("patient.record.createtype")), ProblemActions.INSTANCE);
     }
 
     /**
@@ -102,32 +105,14 @@ public class ProblemRecordCRUDWindow extends ActCRUDWindow<Act>
      * @param isNew determines if the object is a new instance
      */
     @Override
-    protected void onSaved(final Act act, final boolean isNew) {
+    protected void onSaved(Act act, boolean isNew) {
         Act event = getEvent(act);
         if (event != null) {
             // link the act to the event
             PatientMedicalRecordLinker linker = new PatientMedicalRecordLinker(event, act);
-            Runnable done = new Runnable() {
-                public void run() {
-                    ProblemRecordCRUDWindow.super.onSaved(act, isNew);
-                }
-            };
-            Retryer retryer = new Retryer(linker, done, done);
-            retryer.start();
+            Retryer.run(linker);
+            super.onSaved(act, isNew);
         }
-    }
-
-    /**
-     * Determines if an act can be edited.
-     *
-     * @param act the act
-     * @return <code>true</code> if the act can be edited, otherwise
-     *         <code>false</code>
-     */
-    @Override
-    protected boolean canEdit(Act act) {
-        // @todo fix when statuses are sorted out
-        return true;
     }
 
     /**
@@ -148,4 +133,20 @@ public class ProblemRecordCRUDWindow extends ActCRUDWindow<Act>
         return getEvent();
     }
 
+    private static class ProblemActions extends ActActions<Act> {
+
+        public static final ProblemActions INSTANCE = new ProblemActions();
+
+        /**
+         * Determines if an act can be edited.
+         *
+         * @param act the act to check
+         * @return {@code true}
+         */
+        @Override
+        public boolean canEdit(Act act) {
+            // @todo fix when statuses are sorted out
+            return true;
+        }
+    }
 }

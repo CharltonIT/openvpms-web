@@ -18,29 +18,33 @@
 
 package org.openvpms.web.app.workflow.consult;
 
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
 import org.junit.Before;
 import org.junit.Test;
 import org.openvpms.archetype.rules.act.ActStatus;
+import org.openvpms.archetype.rules.patient.PatientArchetypes;
 import org.openvpms.archetype.rules.workflow.WorkflowStatus;
 import org.openvpms.archetype.test.TestHelper;
 import org.openvpms.component.business.domain.im.act.Act;
 import org.openvpms.component.business.domain.im.act.FinancialAct;
 import org.openvpms.component.business.domain.im.party.Party;
 import org.openvpms.component.business.domain.im.security.User;
+import org.openvpms.component.business.service.archetype.helper.ActBean;
 import org.openvpms.web.app.customer.charge.AbstractCustomerChargeActEditorTest;
-import static org.openvpms.web.app.workflow.WorkflowTestHelper.cancelDialog;
-import static org.openvpms.web.app.workflow.WorkflowTestHelper.createAppointment;
-import static org.openvpms.web.app.workflow.WorkflowTestHelper.createTask;
+import org.openvpms.web.app.patient.visit.VisitEditor;
+import org.openvpms.web.app.patient.visit.VisitEditorDialog;
 import org.openvpms.web.component.app.Context;
 import org.openvpms.web.component.app.LocalContext;
 import org.openvpms.web.component.dialog.PopupDialog;
-import org.openvpms.web.component.im.edit.EditDialog;
-import org.openvpms.web.component.im.query.BrowserDialog;
-import static org.openvpms.web.test.EchoTestHelper.fireDialogButton;
 
 import java.math.BigDecimal;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.openvpms.web.app.workflow.WorkflowTestHelper.cancelDialog;
+import static org.openvpms.web.app.workflow.WorkflowTestHelper.createAppointment;
+import static org.openvpms.web.app.workflow.WorkflowTestHelper.createTask;
+import static org.openvpms.web.test.EchoTestHelper.fireDialogButton;
 
 
 /**
@@ -133,12 +137,101 @@ public class ConsultWorkflowTestCase extends AbstractCustomerChargeActEditorTest
     }
 
     /**
+     * Verifies that when the invoice is set to <em>IN_PROGRESS</em> from COMPLETE, the appointment status is remains
+     * <em>BILLED</em>.
+     */
+    @Test
+    public void testInProgressInvoiceStatusForBilledAppointment() {
+        Act appointment = createAppointment(customer, patient, clinician);
+        checkChangeCompleteInvoiceToInProgress(appointment, WorkflowStatus.BILLED);
+    }
+
+    /**
+     * Verifies that when the invoice is set to {@code IN_PROGRESS} from {@code COMPLETE}, the appointment status
+     * remains {@code COMPLETE}.
+     */
+    @Test
+    public void testInProgressInvoiceStatusForCompletedAppointment() {
+        Act appointment = createAppointment(customer, patient, clinician);
+        checkChangeCompleteInvoiceToInProgress(appointment, WorkflowStatus.COMPLETED);
+    }
+
+    /**
+     * Verifies that when the invoice is set to <em>IN_PROGRESS</em> from COMPLETE, the appointment status is remains
+     * <em>BILLED</em>.
+     */
+    @Test
+    public void testInProgressInvoiceStatusForBilledTask() {
+        Act task = createTask(customer, patient, clinician);
+        checkChangeCompleteInvoiceToInProgress(task, WorkflowStatus.BILLED);
+    }
+
+    /**
+     * Verifies that when the invoice is set to {@code IN_PROGRESS} from {@code COMPLETE}, the appointment status
+     * remains {@code COMPLETE}.
+     */
+    @Test
+    public void testInProgressInvoiceStatusForCompletedTask() {
+        Act task = createTask(customer, patient, clinician);
+        checkChangeCompleteInvoiceToInProgress(task, WorkflowStatus.COMPLETED);
+    }
+
+    /**
      * Verifies that cancelling the invoice edit dialog by the 'Cancel' button cancels the workflow,
      * and that unsaved amounts don't affect the invoice.
      */
     @Test
     public void testCancelInvoiceByCancelButtonAfterSave() {
         checkCancelInvoice(true, false);
+    }
+
+    /**
+     * Runs the consult workflow, verifying that the "Add Visit & Note" operation creates a note with a new visit,
+     * selecting the note.
+     */
+    @Test
+    public void testAddVisitAndNote() {
+        Act act = createAppointment(customer, patient, clinician);
+        ConsultWorkflowRunner workflow1 = new ConsultWorkflowRunner(act, getPractice(), context);
+        workflow1.start();
+
+        // verify the event has been created with COMPLETED status
+        VisitEditorDialog visitEditorDialog1 = workflow1.editVisit();
+        VisitEditor editor1 = visitEditorDialog1.getEditor();
+        Act event = editor1.getHistory().getObject();
+        assertEquals(ActStatus.COMPLETED, event.getStatus());
+
+        // verify the event is selected
+        checkSelectedHistory(editor1, event, event);
+
+        // add visit and note
+        Act note = workflow1.addVisitAndNote();
+        ActBean bean = new ActBean(note);
+        Act newEvent = bean.getSourceAct(PatientArchetypes.CLINICAL_EVENT_ITEM);
+        assertNotNull(newEvent);
+        assertEquals(ActStatus.COMPLETED, newEvent.getStatus());
+
+        // the note should now be selected, with newEvent as the selected event
+        checkSelectedHistory(editor1, note, newEvent);
+
+        // complete the workflow
+        fireDialogButton(visitEditorDialog1, PopupDialog.OK_ID);
+        workflow1.checkComplete(ActStatus.IN_PROGRESS);
+        workflow1.checkContext(context, customer, patient, null);
+
+        // start a new workflow
+        ConsultWorkflowRunner workflow2 = new ConsultWorkflowRunner(act, getPractice(), context);
+        workflow2.start();
+
+        // verify the original event is selected (as its timestamp is closest to that of the appointment)
+        VisitEditorDialog visitEditorDialog2 = workflow2.editVisit();
+        VisitEditor editor2 = visitEditorDialog2.getEditor();
+        checkSelectedHistory(editor2, event, event);
+
+        // complete the workflow
+        fireDialogButton(visitEditorDialog2, PopupDialog.OK_ID);
+        workflow1.checkComplete(ActStatus.IN_PROGRESS);
+        workflow1.checkContext(context, customer, patient, null);
     }
 
     /**
@@ -164,10 +257,10 @@ public class ConsultWorkflowTestCase extends AbstractCustomerChargeActEditorTest
         ConsultWorkflowRunner workflow = new ConsultWorkflowRunner(act, getPractice(), context);
         workflow.start();
 
-        BrowserDialog event = workflow.editClinicalEvent();
+        PopupDialog event = workflow.editVisit();
+        workflow.addNote();
+        workflow.addVisitInvoiceItem(patient, clinician);
         fireDialogButton(event, PopupDialog.OK_ID);
-
-        workflow.addInvoice(patient, clinician, false);
 
         workflow.checkComplete(ActStatus.IN_PROGRESS);
         workflow.checkContext(context, customer, patient, clinician);
@@ -185,16 +278,16 @@ public class ConsultWorkflowTestCase extends AbstractCustomerChargeActEditorTest
         workflow.start();
 
         // first task is to edit the clinical event 
-        BrowserDialog event = workflow.editClinicalEvent();
-        fireDialogButton(event, PopupDialog.OK_ID);
+        VisitEditorDialog dialog = workflow.editVisit();
+        BigDecimal amount = BigDecimal.valueOf(20);
+        workflow.addVisitInvoiceItem(patient, amount, clinician);
 
         // next is to edit the invoice
-        BigDecimal amount = BigDecimal.valueOf(20);
-        EditDialog dialog = workflow.addInvoiceItem(patient, amount, clinician);
         if (save) {
+            dialog.getEditor().selectCharges();
             fireDialogButton(dialog, PopupDialog.APPLY_ID);          // save the invoice
         }
-        workflow.addInvoiceItem(patient, amount, clinician);         // add another item. Won't be saved
+        workflow.addVisitInvoiceItem(patient, amount, clinician);    // add another item. Won't be saved
 
         // close the dialog
         cancelDialog(dialog, userClose);
@@ -221,13 +314,62 @@ public class ConsultWorkflowTestCase extends AbstractCustomerChargeActEditorTest
         ConsultWorkflowRunner workflow = new ConsultWorkflowRunner(act, getPractice(), context);
         workflow.start();
 
-        BrowserDialog event = workflow.editClinicalEvent();
-        fireDialogButton(event, PopupDialog.OK_ID);
-
-        workflow.addInvoice(patient, clinician, ActStatus.COMPLETED);
+        VisitEditorDialog dialog = workflow.editVisit();
+        workflow.addVisitInvoiceItem(patient, clinician);
+        dialog.getEditor().getChargeEditor().setStatus(ActStatus.COMPLETED);
+        fireDialogButton(dialog, PopupDialog.OK_ID);
 
         workflow.checkComplete(WorkflowStatus.BILLED);
         workflow.checkContext(context, customer, patient, clinician);
+    }
+
+    /**
+     * Transitions a {@code COMPLETED} invoice to {@code IN_PROGRESS} and verifies that an appointment/task that
+     * is {@code COMPLETED} or {@code BILLED} does not change status.
+     *
+     * @param act            the appointment or task
+     * @param expectedStatus the expected appointment/task status
+     */
+    private void checkChangeCompleteInvoiceToInProgress(Act act, String expectedStatus) {
+        // runs the workflow to create a COMPLETE invoice, and sets the appointment/task BILLED
+        checkCompleteInvoiceStatus(act);
+        if (!act.getStatus().equals(expectedStatus)) {
+            act.setStatus(expectedStatus);
+            save(act);
+        }
+
+        // run the workflow again, but this time mark the invoice IN_PROGRESS
+        ConsultWorkflowRunner workflow = new ConsultWorkflowRunner(act, getPractice(), context);
+        workflow.start();
+
+        VisitEditorDialog dialog = workflow.editVisit();
+        workflow.addVisitInvoiceItem(patient, clinician);
+        dialog.getEditor().getChargeEditor().setStatus(ActStatus.IN_PROGRESS);
+        fireDialogButton(dialog, PopupDialog.OK_ID);
+
+        // verify the invoice is now IN_PROGRESS
+        Act invoice = get(workflow.getInvoice());
+        assertNotNull(invoice);
+        assertEquals(ActStatus.IN_PROGRESS, invoice.getStatus());
+
+        // verify the appointment/task is that expected
+        workflow.checkComplete(expectedStatus);
+        workflow.checkContext(context, customer, patient, clinician);
+    }
+
+    /**
+     * Verifies that the selected act in the history matches that expected and is associated with or the same as
+     * the supplied event.
+     *
+     * @param editor   the visit editor
+     * @param selected the expected selected act
+     * @param event    the event
+     */
+    private void checkSelectedHistory(VisitEditor editor, Act selected, Act event) {
+        assertEquals(selected, editor.getHistory().getObject());
+        assertEquals(event, editor.getHistory().getEvent());
+        assertEquals(selected, editor.getHistoryBrowser().getSelected());
+        assertEquals(event, editor.getHistoryBrowser().getEvent());
     }
 
 }
