@@ -1,19 +1,17 @@
 /*
- *  Version: 1.0
+ * Version: 1.0
  *
- *  The contents of this file are subject to the OpenVPMS License Version
- *  1.0 (the 'License'); you may not use this file except in compliance with
- *  the License. You may obtain a copy of the License at
- *  http://www.openvpms.org/license/
+ * The contents of this file are subject to the OpenVPMS License Version
+ * 1.0 (the 'License'); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * http://www.openvpms.org/license/
  *
- *  Software distributed under the License is distributed on an 'AS IS' basis,
- *  WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
- *  for the specific language governing rights and limitations under the
- *  License.
+ * Software distributed under the License is distributed on an 'AS IS' basis,
+ * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ * for the specific language governing rights and limitations under the
+ * License.
  *
- *  Copyright 2012 (C) OpenVPMS Ltd. All Rights Reserved.
- *
- *  $Id$
+ * Copyright 2013 (C) OpenVPMS Ltd. All Rights Reserved.
  */
 package org.openvpms.web.app.patient.visit;
 
@@ -123,16 +121,7 @@ public class VisitEditorDialog extends PopupDialog {
             CustomerChargeDocuments docs = new CustomerChargeDocuments(editor.getChargeEditor());
             List<Act> existing = docs.getUnprinted();
             if (editor.save()) {
-                ActionListener printListener = new ActionListener() {
-                    @Override
-                    public void onAction(ActionEvent event) {
-                        VisitEditorDialog.super.onOK();
-                    }
-                };
-                if (!docs.printNew(existing, printListener)) {
-                    // nothing to print, so close now
-                    super.onOK();
-                }
+                printNew(docs, existing);
             }
         } else {
             super.onOK();
@@ -197,8 +186,10 @@ public class VisitEditorDialog extends PopupDialog {
      * Marks the invoice COMPLETED and closes the dialog if the operation is successful.
      */
     private void onComplete() {
+        CustomerChargeDocuments docs = new CustomerChargeDocuments(editor.getChargeEditor());
+        List<Act> existing = docs.getUnprinted();
         if (editor.getCharge().complete()) {
-            onOK();
+            printNew(docs, existing);
         }
     }
 
@@ -206,8 +197,29 @@ public class VisitEditorDialog extends PopupDialog {
      * Marks the invoice IN_PROGRESS, and closes the dialog if the operation is successful.
      */
     private void onInProgress() {
+        CustomerChargeDocuments docs = new CustomerChargeDocuments(editor.getChargeEditor());
+        List<Act> existing = docs.getUnprinted();
         if (editor.getCharge().inProgress()) {
-            onOK();
+            printNew(docs, existing);
+        }
+    }
+
+    /**
+     * Prints any new documents set for immediate printing.
+     *
+     * @param docs     the documents
+     * @param existing the existing documents
+     */
+    private void printNew(CustomerChargeDocuments docs, List<Act> existing) {
+        ActionListener printListener = new ActionListener() {
+            @Override
+            public void onAction(ActionEvent event) {
+                VisitEditorDialog.super.onOK();
+            }
+        };
+        if (!docs.printNew(existing, printListener)) {
+            // nothing to print, so close now
+            super.onOK();
         }
     }
 
