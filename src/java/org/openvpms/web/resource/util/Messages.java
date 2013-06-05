@@ -49,7 +49,7 @@ public final class Messages {
      *         (if the key is not defined, the string "!key!" is returned)
      */
     public static String get(String key, Object ... arguments) {
-        return get(key, false, arguments);
+        return format(key, false, arguments);
     }
 
     /**
@@ -61,8 +61,8 @@ public final class Messages {
      * @return the appropriate formatted localized text
      *         (if the key is not defined, the string "!key!" is returned)
      */
-    public static String get(String key, boolean allowNull,
-                             Object ... arguments) {
+    public static String format(String key, boolean allowNull,
+                                Object... arguments) {
         String result = null;
         Locale locale = getLocale();
         String pattern = get(key, allowNull);

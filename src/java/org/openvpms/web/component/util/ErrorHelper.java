@@ -221,7 +221,7 @@ public class ErrorHelper {
         String result = null;
         if (displayName != null) {
             String key = exception.getClass().getName() + ".formatted";
-            result = Messages.get(key, true, displayName);
+            result = Messages.format(key, true, displayName);
         }
         if (result == null) {
             result = Messages.get(exception.getClass().getName(), true);
