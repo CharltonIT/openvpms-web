@@ -1,24 +1,20 @@
 /*
- *  Version: 1.0
+ * Version: 1.0
  *
- *  The contents of this file are subject to the OpenVPMS License Version
- *  1.0 (the 'License'); you may not use this file except in compliance with
- *  the License. You may obtain a copy of the License at
- *  http://www.openvpms.org/license/
+ * The contents of this file are subject to the OpenVPMS License Version
+ * 1.0 (the 'License'); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * http://www.openvpms.org/license/
  *
- *  Software distributed under the License is distributed on an 'AS IS' basis,
- *  WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
- *  for the specific language governing rights and limitations under the
- *  License.
+ * Software distributed under the License is distributed on an 'AS IS' basis,
+ * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ * for the specific language governing rights and limitations under the
+ * License.
  *
- *  Copyright 2010 (C) OpenVPMS Ltd. All Rights Reserved.
- *
- *  $Id$
+ * Copyright 2013 (C) OpenVPMS Ltd. All Rights Reserved.
  */
 package org.openvpms.web.app.workflow.worklist;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 import org.junit.Before;
 import org.junit.Test;
 import org.openvpms.archetype.rules.util.DateRules;
@@ -42,11 +38,13 @@ import org.openvpms.web.test.AbstractAppTest;
 
 import java.util.Date;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 /**
  * Tests the {@link TaskActEditor} class.
  *
- * @author <a href="mailto:support@openvpms.org">OpenVPMS Team</a>
- * @version $LastChangedDate: 2006-05-02 05:16:31Z $
+ * @author Tim Anderson
  */
 public class TaskActEditorTestCase extends AbstractAppTest {
 
@@ -67,7 +65,7 @@ public class TaskActEditorTestCase extends AbstractAppTest {
 
 
     /**
-     * Verfies that a task editor can be created and saved when mandatory fields are populated.
+     * Verifies that a task editor can be created and saved when mandatory fields are populated.
      */
     @Test
     public void testSave() {
@@ -129,7 +127,7 @@ public class TaskActEditorTestCase extends AbstractAppTest {
     }
 
     /**
-     * Creates a new editor, pre-populating the customer, workk list, and user.
+     * Creates a new editor, pre-populating the customer, worklist, and user.
      *
      * @return a new editor
      */
@@ -137,7 +135,7 @@ public class TaskActEditorTestCase extends AbstractAppTest {
         Context context = new LocalContext();
         Party customer = TestHelper.createCustomer();
 
-        // populate the context. These will be used to initalise the task
+        // populate the context. These will be used to initialise the task
         context.setCustomer(customer);
         context.setWorkList(worklist);
         context.setUser(user);

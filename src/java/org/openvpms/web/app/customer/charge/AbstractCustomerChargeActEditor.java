@@ -57,21 +57,20 @@ import java.util.Set;
  * <em>act.customerAccountChargesCredit</em>
  * or <em>act.customerAccountChargesCounter</em>.
  *
- * @author <a href="mailto:support@openvpms.org">OpenVPMS Team</a>
- * @version $LastChangedDate:2006-02-21 03:48:29Z $
+ * @author Tim Anderson
  */
 public class AbstractCustomerChargeActEditor extends FinancialActEditor {
 
     /**
      * Determines if a default item should added if no items are present.
      */
-    private final boolean addDefaultItem;
+    private boolean addDefaultItem;
 
     /**
      * Constructs an {@code AbstractCustomerChargeActEditor}.
      *
      * @param act     the act to edit
-     * @param parent  the parent object. May be <tt>null</tt>
+     * @param parent  the parent object. May be {@code null}
      * @param context the layout context
      */
     public AbstractCustomerChargeActEditor(FinancialAct act, IMObject parent, LayoutContext context) {
@@ -82,9 +81,9 @@ public class AbstractCustomerChargeActEditor extends FinancialActEditor {
      * Constructs an {@code AbstractCustomerChargeActEditor}.
      *
      * @param act            the act to edit
-     * @param parent         the parent object. May be <tt>null</tt>
+     * @param parent         the parent object. May be {@code null}
      * @param context        the layout context
-     * @param addDefaultItem if <tt>true</tt> add a default item if the act has none
+     * @param addDefaultItem if {@code true} add a default item if the act has none
      */
     public AbstractCustomerChargeActEditor(FinancialAct act, IMObject parent,
                                            LayoutContext context, boolean addDefaultItem) {
@@ -104,7 +103,7 @@ public class AbstractCustomerChargeActEditor extends FinancialActEditor {
     /**
      * Returns the customer associated with the charge.
      *
-     * @return the customer. May be <tt>null</tt>
+     * @return the customer. May be {@code null}
      */
     public Party getCustomer() {
         return (Party) getParticipant("customer");
@@ -113,7 +112,7 @@ public class AbstractCustomerChargeActEditor extends FinancialActEditor {
     /**
      * Returns the location associated with the charge.
      *
-     * @return the location. May be <tt>null</tt>
+     * @return the location. May be {@code null}
      */
     public Party getLocation() {
         return (Party) getParticipant("location");
@@ -169,7 +168,7 @@ public class AbstractCustomerChargeActEditor extends FinancialActEditor {
     /**
      * Adds a new charge item, returning its editor.
      *
-     * @return the charge item editor, or <tt>null</tt> if an item couldn't be created
+     * @return the charge item editor, or {@code null} if an item couldn't be created
      */
     public CustomerChargeActItemEditor addItem() {
         ActRelationshipCollectionEditor items = getItems();
@@ -184,7 +183,7 @@ public class AbstractCustomerChargeActEditor extends FinancialActEditor {
     /**
      * Sets the clinician.
      *
-     * @param clinician the clinician. May be <tt>null</ttt>
+     * @param clinician the clinician. May be {@code null}
      */
     public void setClinician(User clinician) {
         setParticipant("clinician", clinician);
@@ -196,7 +195,7 @@ public class AbstractCustomerChargeActEditor extends FinancialActEditor {
      * For invoices, this links items to their corresponding clinical events, creating events as required, and marks
      * matching reminders completed.
      *
-     * @return <tt>true</tt> if the save was successful
+     * @return {@code true} if the save was successful
      */
     @Override
     protected boolean doSave() {
@@ -250,7 +249,7 @@ public class AbstractCustomerChargeActEditor extends FinancialActEditor {
     }
 
     /**
-     * Adds a default invoice item if there are no items present and {@link #addDefaultItem} is <tt>true</tt>.
+     * Adds a default invoice item if there are no items present and {@link #addDefaultItem} is {@code true}.
      */
     private void initItems() {
         if (addDefaultItem) {

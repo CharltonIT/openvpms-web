@@ -1,19 +1,17 @@
 /*
- *  Version: 1.0
+ * Version: 1.0
  *
- *  The contents of this file are subject to the OpenVPMS License Version
- *  1.0 (the 'License'); you may not use this file except in compliance with
- *  the License. You may obtain a copy of the License at
- *  http://www.openvpms.org/license/
+ * The contents of this file are subject to the OpenVPMS License Version
+ * 1.0 (the 'License'); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * http://www.openvpms.org/license/
  *
- *  Software distributed under the License is distributed on an 'AS IS' basis,
- *  WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
- *  for the specific language governing rights and limitations under the
- *  License.
+ * Software distributed under the License is distributed on an 'AS IS' basis,
+ * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ * for the specific language governing rights and limitations under the
+ * License.
  *
- *  Copyright 2011 (C) OpenVPMS Ltd. All Rights Reserved.
- *
- *  $Id: $
+ * Copyright 2013 (C) OpenVPMS Ltd. All Rights Reserved.
  */
 
 package org.openvpms.web.app.workflow;
@@ -21,7 +19,6 @@ package org.openvpms.web.app.workflow;
 import nextapp.echo2.app.Table;
 import org.openvpms.component.business.domain.im.common.IMObject;
 import org.openvpms.component.business.domain.im.party.Party;
-import org.openvpms.web.app.patient.visit.VisitEditorDialog;
 import org.openvpms.web.component.dialog.ConfirmationDialog;
 import org.openvpms.web.component.im.edit.EditDialog;
 import org.openvpms.web.component.im.query.Browser;
@@ -34,6 +31,7 @@ import org.openvpms.web.component.workflow.Task;
 import org.openvpms.web.component.workflow.TaskContext;
 import org.openvpms.web.component.workflow.WorkflowImpl;
 import org.openvpms.web.test.EchoTestHelper;
+import org.openvpms.web.app.patient.visit.VisitEditorDialog;
 
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -42,8 +40,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Helper to run workflows.
  *
- * @author <a href="mailto:support@openvpms.org">OpenVPMS Team</a>
- * @version $LastChangedDate: $
+ * @author Tim Anderson
  */
 public class WorkflowRunner<T extends WorkflowImpl> {
     /**
@@ -59,7 +56,7 @@ public class WorkflowRunner<T extends WorkflowImpl> {
     /**
      * Returns the current executing task.
      *
-     * @return the current task. May be <tt>null</tt>
+     * @return the current task. May be {@code null}
      */
     public Task getTask() {
         return tracker.getCurrent();
@@ -109,7 +106,7 @@ public class WorkflowRunner<T extends WorkflowImpl> {
      * <p/>
      * The current task must be a {@link ConfirmationTask}.
      *
-     * @param button the button identifier. If <tt>null</tt>, use the <tt>userClose</tt> method.
+     * @param button the button identifier. If {@code null}, use the {@code userClose} method.
      */
     public void confirm(String button) {
         Task current = tracker.getCurrent();
@@ -188,8 +185,8 @@ public class WorkflowRunner<T extends WorkflowImpl> {
     /**
      * Helper to reload an object.
      *
-     * @param object the object to reload. May be <tt>null</tt>
-     * @return the reloaded object. May be <tt>null</tt>
+     * @param object the object to reload. May be {@code null}
+     * @return the reloaded object. May be {@code null}
      */
     protected <T extends IMObject> T get(T object) {
         return IMObjectHelper.reload(object);

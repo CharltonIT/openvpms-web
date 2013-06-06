@@ -29,11 +29,11 @@ import org.openvpms.component.business.domain.im.act.FinancialAct;
 import org.openvpms.component.business.domain.im.party.Party;
 import org.openvpms.component.business.domain.im.security.User;
 import org.openvpms.component.business.service.archetype.helper.ActBean;
+import org.openvpms.web.component.app.Context;
+import org.openvpms.web.component.app.LocalContext;
 import org.openvpms.web.app.customer.charge.AbstractCustomerChargeActEditorTest;
 import org.openvpms.web.app.patient.visit.VisitEditor;
 import org.openvpms.web.app.patient.visit.VisitEditorDialog;
-import org.openvpms.web.component.app.Context;
-import org.openvpms.web.component.app.LocalContext;
 import org.openvpms.web.component.dialog.PopupDialog;
 
 import java.math.BigDecimal;
@@ -41,10 +41,10 @@ import java.math.BigDecimal;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.openvpms.web.test.EchoTestHelper.fireDialogButton;
 import static org.openvpms.web.app.workflow.WorkflowTestHelper.cancelDialog;
 import static org.openvpms.web.app.workflow.WorkflowTestHelper.createAppointment;
 import static org.openvpms.web.app.workflow.WorkflowTestHelper.createTask;
-import static org.openvpms.web.test.EchoTestHelper.fireDialogButton;
 
 
 /**

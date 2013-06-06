@@ -1,19 +1,17 @@
 /*
- *  Version: 1.0
+ * Version: 1.0
  *
- *  The contents of this file are subject to the OpenVPMS License Version
- *  1.0 (the 'License'); you may not use this file except in compliance with
- *  the License. You may obtain a copy of the License at
- *  http://www.openvpms.org/license/
+ * The contents of this file are subject to the OpenVPMS License Version
+ * 1.0 (the 'License'); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * http://www.openvpms.org/license/
  *
- *  Software distributed under the License is distributed on an 'AS IS' basis,
- *  WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
- *  for the specific language governing rights and limitations under the
- *  License.
+ * Software distributed under the License is distributed on an 'AS IS' basis,
+ * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ * for the specific language governing rights and limitations under the
+ * License.
  *
- *  Copyright 2011 (C) OpenVPMS Ltd. All Rights Reserved.
- *
- *  $Id: $
+ * Copyright 2013 (C) OpenVPMS Ltd. All Rights Reserved.
  */
 
 package org.openvpms.web.app.workflow;
@@ -28,9 +26,6 @@ import org.openvpms.component.business.domain.im.common.IMObject;
 import org.openvpms.component.business.domain.im.party.Party;
 import org.openvpms.component.business.domain.im.product.Product;
 import org.openvpms.component.business.domain.im.security.User;
-import org.openvpms.web.app.customer.charge.ChargeItemRelationshipCollectionEditor;
-import org.openvpms.web.app.customer.charge.ChargePopupEditorManager;
-import org.openvpms.web.app.customer.charge.CustomerChargeActEditor;
 import org.openvpms.web.component.dialog.PopupDialog;
 import org.openvpms.web.component.im.edit.EditDialog;
 import org.openvpms.web.component.im.edit.IMObjectEditor;
@@ -42,21 +37,29 @@ import org.openvpms.web.component.workflow.EditIMObjectTask;
 import org.openvpms.web.component.workflow.TaskContext;
 import org.openvpms.web.component.workflow.WorkflowImpl;
 import org.openvpms.web.system.ServiceHelper;
+import org.openvpms.web.app.customer.charge.ChargeEditorQueue;
+import org.openvpms.web.app.customer.charge.ChargeItemRelationshipCollectionEditor;
+import org.openvpms.web.app.customer.charge.CustomerChargeActEditor;
+import org.openvpms.web.app.customer.charge.CustomerChargeActItemEditor;
+import org.openvpms.web.app.patient.charge.VisitChargeEditor;
+import org.openvpms.web.app.patient.charge.VisitChargeItemEditor;
+import org.openvpms.web.app.patient.visit.VisitEditor;
+import org.openvpms.web.app.patient.visit.VisitEditorDialog;
 
 import java.math.BigDecimal;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
+import static org.openvpms.web.test.EchoTestHelper.fireDialogButton;
 import static org.openvpms.web.app.customer.charge.CustomerChargeTestHelper.addItem;
 import static org.openvpms.web.app.customer.charge.CustomerChargeTestHelper.createProduct;
-import static org.openvpms.web.test.EchoTestHelper.fireDialogButton;
 
 
 /**
  * Helper to run financial workflows.
  *
- * @author <a href="mailto:support@openvpms.org">OpenVPMS Team</a>
- * @version $LastChangedDate: $
+ * @author Tim Anderson
  */
 public abstract class FinancialWorkflowRunner<T extends WorkflowImpl> extends WorkflowRunner<T> {
 
@@ -78,7 +81,7 @@ public abstract class FinancialWorkflowRunner<T extends WorkflowImpl> extends Wo
     /**
      * Returns the invoice.
      *
-     * @return the invoice. May be <tt>null</tt>
+     * @return the invoice. May be {@code null}
      */
     public FinancialAct getInvoice() {
         return (FinancialAct) getContext().getObject(CustomerAccountArchetypes.INVOICE);
@@ -89,7 +92,7 @@ public abstract class FinancialWorkflowRunner<T extends WorkflowImpl> extends Wo
      *
      * @param patient   the patient
      * @param amount    the amount
-     * @param clinician the clinician. May be <tt>null</tt>
+     * @param clinician the clinician. May be {@code null}
      * @return the edit dialog
      */
     public EditDialog addInvoiceItem(Party patient, BigDecimal amount, User clinician) {
@@ -108,7 +111,7 @@ public abstract class FinancialWorkflowRunner<T extends WorkflowImpl> extends Wo
      * Verifies that the current task is an EditInvoiceTask, and adds invoice item, closing the dialog.
      *
      * @param patient   the patient
-     * @param clinician the clinician. May be <tt>null</tt>
+     * @param clinician the clinician. May be {@code null}
      * @param post      if <tt>true</tt> post the invoice
      * @return the invoice total
      */
@@ -139,6 +142,58 @@ public abstract class FinancialWorkflowRunner<T extends WorkflowImpl> extends Wo
     }
 
     /**
+     * Verifies that the current task is an EditVisitTask, and adds invoice item for the specified amount.
+     *
+     * @param patient   the patient
+     * @param amount    the amount
+     * @param clinician the clinician. May be {@code null}
+     * @return the item editor
+     */
+    public CustomerChargeActItemEditor addVisitInvoiceItem(Party patient, BigDecimal amount, User clinician) {
+        Product product = createProduct(ProductArchetypes.SERVICE, amount, getPractice());
+        return addVisitInvoiceItem(patient, clinician, product);
+    }
+
+    /**
+     * Verifies that the current task is an {@link EditVisitTask} and returns the corresponding dialog.
+     */
+    public VisitEditorDialog getVisitEditorDialog() {
+        TestEditVisitTask task = (TestEditVisitTask) getTask();
+        return task.getVisitDialog();
+    }
+
+    /**
+     * Verifies that the current task is an {@link EditVisitTask}, and adds invoice item for the specified product.
+     *
+     * @param patient   the patient
+     * @param clinician the clinician. May be {@code null}
+     * @param product   the product
+     * @return the item editor
+     */
+    public VisitChargeItemEditor addVisitInvoiceItem(Party patient, User clinician, Product product) {
+        TestEditVisitTask task = (TestEditVisitTask) getTask();
+        VisitEditorDialog dialog = task.getVisitDialog();
+
+        // get the editor and add an item
+        VisitEditor visitEditor = dialog.getEditor();
+        VisitChargeEditor editor = visitEditor.getChargeEditor();
+        assertNotNull(editor);
+        editor.setClinician(clinician);
+        return (VisitChargeItemEditor) addItem(editor, patient, product, BigDecimal.ONE, task.getEditorQueue());
+    }
+
+    public VisitChargeItemEditor getVisitItemEditor() {
+        TestEditVisitTask task = (TestEditVisitTask) getTask();
+        VisitEditorDialog dialog = task.getVisitDialog();
+
+        // get the editor and add an item
+        VisitEditor visitEditor = dialog.getEditor();
+        TestVisitChargeEditor editor = (TestVisitChargeEditor) visitEditor.getChargeEditor();
+        assertNotNull(editor);
+        return (VisitChargeItemEditor) editor.getItems().getCurrentEditor();
+    }
+
+    /**
      * Returns the practice.
      *
      * @return the practice
@@ -156,7 +211,7 @@ public abstract class FinancialWorkflowRunner<T extends WorkflowImpl> extends Wo
         /**
          * The popup dialog manager.
          */
-        private ChargePopupEditorManager manager = new ChargePopupEditorManager();
+        private ChargeEditorQueue manager = new ChargeEditorQueue();
 
         /**
          * Constructs an <tt>EditInvoice</tt> to edit an object in the {@link TaskContext}.
@@ -170,7 +225,7 @@ public abstract class FinancialWorkflowRunner<T extends WorkflowImpl> extends Wo
          *
          * @return the popup dialog manager
          */
-        public ChargePopupEditorManager getEditorManager() {
+        public ChargeEditorQueue getEditorManager() {
             return manager;
         }
 
@@ -191,7 +246,7 @@ public abstract class FinancialWorkflowRunner<T extends WorkflowImpl> extends Wo
                     ActRelationshipCollectionEditor editor = super.createItemsEditor(act, items);
                     if (editor instanceof ChargeItemRelationshipCollectionEditor) {
                         // register a handler for act popups
-                        ((ChargeItemRelationshipCollectionEditor) editor).setPopupEditorManager(manager);
+                        ((ChargeItemRelationshipCollectionEditor) editor).setEditorQueue(manager);
                     }
                     return editor;
                 }

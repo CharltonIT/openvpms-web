@@ -1,24 +1,23 @@
 /*
- *  Version: 1.0
+ * Version: 1.0
  *
- *  The contents of this file are subject to the OpenVPMS License Version
- *  1.0 (the 'License'); you may not use this file except in compliance with
- *  the License. You may obtain a copy of the License at
- *  http://www.openvpms.org/license/
+ * The contents of this file are subject to the OpenVPMS License Version
+ * 1.0 (the 'License'); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * http://www.openvpms.org/license/
  *
- *  Software distributed under the License is distributed on an 'AS IS' basis,
- *  WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
- *  for the specific language governing rights and limitations under the
- *  License.
+ * Software distributed under the License is distributed on an 'AS IS' basis,
+ * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ * for the specific language governing rights and limitations under the
+ * License.
  *
- *  Copyright 2011 (C) OpenVPMS Ltd. All Rights Reserved.
- *
- *  $Id: $
+ * Copyright 2013 (C) OpenVPMS Ltd. All Rights Reserved.
  */
 
 package org.openvpms.web.app.customer.charge;
 
 import org.apache.commons.lang.ObjectUtils;
+import org.junit.Before;
 import org.openvpms.archetype.rules.doc.DocumentArchetypes;
 import org.openvpms.archetype.rules.finance.account.CustomerAccountArchetypes;
 import org.openvpms.archetype.rules.patient.InvestigationArchetypes;
@@ -57,8 +56,7 @@ import static org.junit.Assert.fail;
 /**
  * Abstract base class for customer charge act editor tests.
  *
- * @author <a href="mailto:support@openvpms.org">OpenVPMS Team</a>
- * @version $LastChangedDate: $
+ * @author Tim Anderson
  */
 public abstract class AbstractCustomerChargeActEditorTest extends AbstractAppTest {
 
@@ -70,7 +68,7 @@ public abstract class AbstractCustomerChargeActEditorTest extends AbstractAppTes
     /**
      * Sets up the test case.
      */
-    @Override
+    @Before
     public void setUp() {
         // NOTE: need to create the practice prior to the application as it caches the practice in the context 
         practice = TestHelper.getPractice();
@@ -99,7 +97,7 @@ public abstract class AbstractCustomerChargeActEditorTest extends AbstractAppTes
      * @return the editor for the new item
      */
     protected CustomerChargeActItemEditor addItem(CustomerChargeActEditor editor, Party patient, Product product,
-                                                  BigDecimal quantity, ChargePopupEditorManager mgr) {
+                                                  BigDecimal quantity, ChargeEditorQueue mgr) {
         return CustomerChargeTestHelper.addItem(editor, patient, product, quantity, mgr);
     }
 
@@ -114,7 +112,7 @@ public abstract class AbstractCustomerChargeActEditorTest extends AbstractAppTes
      * @param mgr        the popup editor manager
      */
     protected void setItem(CustomerChargeActEditor editor, CustomerChargeActItemEditor itemEditor,
-                           Party patient, Product product, BigDecimal quantity, ChargePopupEditorManager mgr) {
+                           Party patient, Product product, BigDecimal quantity, ChargeEditorQueue mgr) {
         CustomerChargeTestHelper.setItem(editor, itemEditor, patient, product, quantity, mgr);
     }
 

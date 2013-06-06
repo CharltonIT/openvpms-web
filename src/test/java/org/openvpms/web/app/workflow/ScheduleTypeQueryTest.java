@@ -17,7 +17,6 @@
  */
 package org.openvpms.web.app.workflow;
 
-import static org.junit.Assert.assertEquals;
 import org.junit.Test;
 import org.openvpms.component.business.domain.im.common.Entity;
 import org.openvpms.component.business.domain.im.common.IMObjectReference;
@@ -25,6 +24,8 @@ import org.openvpms.component.business.domain.im.party.Party;
 import org.openvpms.web.component.im.query.AbstractEntityQueryTest;
 
 import java.util.List;
+
+import static org.junit.Assert.assertEquals;
 
 
 /**

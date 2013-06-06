@@ -1,19 +1,17 @@
 /*
- *  Version: 1.0
+ * Version: 1.0
  *
- *  The contents of this file are subject to the OpenVPMS License Version
- *  1.0 (the 'License'); you may not use this file except in compliance with
- *  the License. You may obtain a copy of the License at
- *  http://www.openvpms.org/license/
+ * The contents of this file are subject to the OpenVPMS License Version
+ * 1.0 (the 'License'); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * http://www.openvpms.org/license/
  *
- *  Software distributed under the License is distributed on an 'AS IS' basis,
- *  WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
- *  for the specific language governing rights and limitations under the
- *  License.
+ * Software distributed under the License is distributed on an 'AS IS' basis,
+ * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ * for the specific language governing rights and limitations under the
+ * License.
  *
- *  Copyright 2011 (C) OpenVPMS Ltd. All Rights Reserved.
- *
- *  $Id: $
+ * Copyright 2013 (C) OpenVPMS Ltd. All Rights Reserved.
  */
 
 package org.openvpms.web.app.workflow.checkin;
@@ -31,7 +29,9 @@ import org.openvpms.component.business.domain.im.security.User;
 import org.openvpms.component.business.service.archetype.helper.ActBean;
 import org.openvpms.component.business.service.archetype.helper.TypeHelper;
 import org.openvpms.web.app.patient.PatientEditor;
-import org.openvpms.web.app.workflow.WorkflowRunner;
+import org.openvpms.web.app.workflow.EditVisitTask;
+import org.openvpms.web.app.workflow.FinancialWorkflowRunner;
+import org.openvpms.web.app.workflow.TestEditVisitTask;
 import org.openvpms.web.component.app.Context;
 import org.openvpms.web.component.dialog.PopupDialog;
 import org.openvpms.web.component.im.edit.EditDialog;
@@ -39,6 +39,7 @@ import org.openvpms.web.component.im.edit.IMObjectEditor;
 import org.openvpms.web.component.im.edit.act.DefaultActEditor;
 import org.openvpms.web.component.im.query.Browser;
 import org.openvpms.web.component.im.query.BrowserDialog;
+import org.openvpms.web.component.im.query.DefaultIMObjectTableBrowser;
 import org.openvpms.web.component.im.query.ListQuery;
 import org.openvpms.web.component.im.query.Query;
 import org.openvpms.web.component.im.util.IMObjectHelper;
@@ -65,7 +66,7 @@ import static org.openvpms.web.test.EchoTestHelper.fireDialogButton;
  * @author <a href="mailto:support@openvpms.org">OpenVPMS Team</a>
  * @version $LastChangedDate: $
  */
-class CheckInWorkflowRunner extends WorkflowRunner<CheckInWorkflowRunner.TestCheckInWorkflow> {
+class CheckInWorkflowRunner extends FinancialWorkflowRunner<CheckInWorkflowRunner.TestCheckInWorkflow> {
 
     /**
      * The appointment.
@@ -74,12 +75,14 @@ class CheckInWorkflowRunner extends WorkflowRunner<CheckInWorkflowRunner.TestChe
 
 
     /**
-     * Constructs a <tt>WorkflowRunner</tt>.
+     * Constructs a {@code WorkflowRunner}.
      *
      * @param appointment the appointment
+     * @param practice    the practice
      * @param context     the context
      */
-    public CheckInWorkflowRunner(Act appointment, Context context) {
+    public CheckInWorkflowRunner(Act appointment, Party practice, Context context) {
+        super(practice);
         this.appointment = appointment;
         setWorkflow(new TestCheckInWorkflow(appointment, context));
     }
@@ -87,7 +90,7 @@ class CheckInWorkflowRunner extends WorkflowRunner<CheckInWorkflowRunner.TestChe
     /**
      * Sets the patient used for patient selection.
      *
-     * @param patient the patient. May be <tt>null</tt>
+     * @param patient the patient. May be {@code null}
      */
     public void setPatient(Party patient) {
         getWorkflow().setPatient(patient);
@@ -96,7 +99,7 @@ class CheckInWorkflowRunner extends WorkflowRunner<CheckInWorkflowRunner.TestChe
     /**
      * Sets the work list used for work list selection.
      *
-     * @param workList the work list. May be <tt>null</tt>
+     * @param workList the work list. May be {@code null}
      */
     public void setWorkList(Party workList) {
         getWorkflow().setWorkList(workList);
@@ -229,11 +232,12 @@ class CheckInWorkflowRunner extends WorkflowRunner<CheckInWorkflowRunner.TestChe
     /**
      * Verifies the context has an <em>act.patientClinicalEvent</em> for the specified patient.
      *
-     * @param patient   the expected patient. May be <tt>null</tt>
-     * @param clinician the expected clinician. May be <tt>null</tt>
+     * @param patient   the expected patient. May be {@code null}
+     * @param clinician the expected clinician. May be {@code null}
      * @param status    the expected status
+     * @return the event
      */
-    public void checkEvent(Party patient, User clinician, String status) {
+    public Act checkEvent(Party patient, User clinician, String status) {
         Act event = (Act) getContext().getObject(PatientArchetypes.CLINICAL_EVENT);
         assertNotNull(event);
         assertFalse(event.isNew());  // should be saved
@@ -241,12 +245,13 @@ class CheckInWorkflowRunner extends WorkflowRunner<CheckInWorkflowRunner.TestChe
         assertEquals(patient, bean.getNodeParticipant("patient"));
         assertEquals(clinician, bean.getNodeParticipant("clinician"));
         assertEquals(status, event.getStatus());
+        return event;
     }
 
     /**
      * Verifies the context has an <em>act.customerAccountChargesInvoice</em>.
      *
-     * @param clinician the expected clinician. May be <tt>null</tt>
+     * @param clinician the expected clinician. May be {@code null}
      * @param amount    the expected amount
      * @param status    the expected status
      * @param saved     if {@code} true, indicates that the invoice as been saved
@@ -299,9 +304,9 @@ class CheckInWorkflowRunner extends WorkflowRunner<CheckInWorkflowRunner.TestChe
     /**
      * Verifies that the workflow is completed.
      *
-     * @param appointmentUpdated if <tt>true</tt> expect the appointment to be <em>CHECKED_IN</em>
-     * @param customer           the expected context customer. May be <tt>null</tt>
-     * @param patient            the expected context patient. May be <tt>null</tt>
+     * @param appointmentUpdated if {@code true} expect the appointment to be <em>CHECKED_IN</em>
+     * @param customer           the expected context customer. May be {@code null}
+     * @param patient            the expected context patient. May be {@code null}
      * @param context            the context to check
      */
     public void checkComplete(boolean appointmentUpdated, Party customer, Party patient, Context context) {
@@ -341,7 +346,7 @@ class CheckInWorkflowRunner extends WorkflowRunner<CheckInWorkflowRunner.TestChe
         private Party workList;
 
         /**
-         * Constructs a <tt>TestCheckInWorkflow</tt> from an appointment.
+         * Constructs a {@code TestCheckInWorkflow} from an appointment.
          *
          * @param appointment the appointment
          * @param context     the context
@@ -354,7 +359,7 @@ class CheckInWorkflowRunner extends WorkflowRunner<CheckInWorkflowRunner.TestChe
         /**
          * Sets the patient to pre-populate the patient selection browser with.
          *
-         * @param patient the patient. May be <tt>null</tt>
+         * @param patient the patient. May be {@code null}
          */
         public void setPatient(Party patient) {
             this.patient = patient;
@@ -363,7 +368,7 @@ class CheckInWorkflowRunner extends WorkflowRunner<CheckInWorkflowRunner.TestChe
         /**
          * Sets the work-list to pre-populate the work-list selection browser with.
          *
-         * @param workList the work-list. May be <tt>null</tt>
+         * @param workList the work-list. May be {@code null}
          */
         public void setWorkList(Party workList) {
             this.workList = workList;
@@ -390,20 +395,40 @@ class CheckInWorkflowRunner extends WorkflowRunner<CheckInWorkflowRunner.TestChe
                                                                     EditIMObjectTask patientEditor) {
             List<Party> patients = (patient != null) ? Arrays.asList(patient) : Collections.<Party>emptyList();
             Query<Party> query = new ListQuery<Party>(patients, PatientArchetypes.PATIENT, Party.class);
-            return new SelectIMObjectTask<Party>(query, patientEditor);
+            return new SelectIMObjectTask<Party>(query, patientEditor) {
+                @Override
+                protected Browser<Party> createBrowser(Query<Party> query) {
+                    return new DefaultIMObjectTableBrowser<Party>(query);
+                }
+            };
         }
 
         /**
          * Creates a new {@link SelectIMObjectTask} to select a work list.
          *
          * @param context the context
-         * @return a new task to select a worklist
+         * @return a new task to select a work list
          */
         @Override
         protected SelectIMObjectTask<Party> createSelectWorkListTask(TaskContext context) {
             List<Party> worklists = (workList != null) ? Arrays.asList(workList) : Collections.<Party>emptyList();
-            Query<Party> query = new ListQuery<Party>(worklists, WORK_LIST_SHORTNAME, Party.class);
-            return new SelectIMObjectTask<Party>(query);
+            Query<Party> query = new ListQuery<Party>(worklists, ScheduleArchetypes.ORGANISATION_WORKLIST, Party.class);
+            return new SelectIMObjectTask<Party>(query) {
+                @Override
+                protected Browser<Party> createBrowser(Query<Party> query) {
+                    return new DefaultIMObjectTableBrowser<Party>(query);
+                }
+            };
+        }
+
+        /**
+         * Creates a new {@link EditVisitTask}.
+         *
+         * @return a new task to edit the visit
+         */
+        @Override
+        protected EditVisitTask createEditVisitTask() {
+            return new TestEditVisitTask();
         }
     }
 

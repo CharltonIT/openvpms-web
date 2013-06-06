@@ -1,19 +1,17 @@
 /*
- *  Version: 1.0
+ * Version: 1.0
  *
- *  The contents of this file are subject to the OpenVPMS License Version
- *  1.0 (the 'License'); you may not use this file except in compliance with
- *  the License. You may obtain a copy of the License at
- *  http://www.openvpms.org/license/
+ * The contents of this file are subject to the OpenVPMS License Version
+ * 1.0 (the 'License'); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * http://www.openvpms.org/license/
  *
- *  Software distributed under the License is distributed on an 'AS IS' basis,
- *  WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
- *  for the specific language governing rights and limitations under the
- *  License.
+ * Software distributed under the License is distributed on an 'AS IS' basis,
+ * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ * for the specific language governing rights and limitations under the
+ * License.
  *
- *  Copyright 2006 (C) OpenVPMS Ltd. All Rights Reserved.
- *
- *  $Id$
+ * Copyright 2013 (C) OpenVPMS Ltd. All Rights Reserved.
  */
 
 package org.openvpms.web.component.workflow;
@@ -33,8 +31,7 @@ import org.openvpms.web.resource.util.Messages;
 /**
  * Task to select an {@link IMObject}.
  *
- * @author <a href="mailto:support@openvpms.org">OpenVPMS Team</a>
- * @version $LastChangedDate: 2006-05-02 05:16:31Z $
+ * @author Tim Anderson
  */
 public class SelectIMObjectTask<T extends IMObject> extends AbstractTask {
 
@@ -70,7 +67,7 @@ public class SelectIMObjectTask<T extends IMObject> extends AbstractTask {
 
 
     /**
-     * Constructs a new <tt>SelectIMObjectTask</tt>.
+     * Constructs a {@code SelectIMObjectTask}.
      *
      * @param shortName the short name to query on. May contain wildcards
      * @param context   the context
@@ -80,21 +77,20 @@ public class SelectIMObjectTask<T extends IMObject> extends AbstractTask {
     }
 
     /**
-     * Constructs a new <tt>SelectIMObjectTask</tt>.
+     * Constructs a {@code SelectIMObjectTask}.
      *
      * @param shortName  the short name to query on. May contain wildcards
      * @param context    the context
      * @param createTask if non-null, handles creation of new objects
      */
-    public SelectIMObjectTask(String shortName, Context context,
-                              Task createTask) {
+    public SelectIMObjectTask(String shortName, Context context, Task createTask) {
         query = QueryFactory.create(shortName, context, IMObject.class);
         type = getType(query.getShortNames());
         this.createTask = createTask;
     }
 
     /**
-     * Constructs a <tt>SelectIMObjectTask</tt>.
+     * Constructs a {@code SelectIMObjectTask}.
      *
      * @param query the query
      */
@@ -103,7 +99,7 @@ public class SelectIMObjectTask<T extends IMObject> extends AbstractTask {
     }
 
     /**
-     * Constructs a <tt>SelectIMObjectTask</tt>.
+     * Constructs a {@code SelectIMObjectTask}.
      *
      * @param query      the query
      * @param createTask if non-null, handles creation of new objects
@@ -113,7 +109,7 @@ public class SelectIMObjectTask<T extends IMObject> extends AbstractTask {
     }
 
     /**
-     * Constructs a <tt>SelectIMObjectTask</tt>.
+     * Constructs a {@code SelectIMObjectTask}.
      *
      * @param type       the collective noun for the types this may select
      * @param query      the query
@@ -131,7 +127,7 @@ public class SelectIMObjectTask<T extends IMObject> extends AbstractTask {
      * If none is specified, one will be generated from the type of objects
      * being queried.
      *
-     * @param title the dialog title. May be <tt>null</tt>
+     * @param title the dialog title. May be {@code null}
      */
     public void setTitle(String title) {
         this.title = title;
@@ -140,7 +136,7 @@ public class SelectIMObjectTask<T extends IMObject> extends AbstractTask {
     /**
      * Sets the dialog message.
      *
-     * @param message the message. May be <tt>null</tt>
+     * @param message the message. May be {@code null}
      */
     public void setMessage(String message) {
         this.message = message;
@@ -149,7 +145,7 @@ public class SelectIMObjectTask<T extends IMObject> extends AbstractTask {
     /**
      * Returns the browser dialog.
      *
-     * @return the browser dialog, or <tt>null</tt> if none is being displayed
+     * @return the browser dialog, or {@code null} if none is being displayed
      */
     public BrowserDialog<T> getBrowserDialog() {
         return dialog;
@@ -163,7 +159,7 @@ public class SelectIMObjectTask<T extends IMObject> extends AbstractTask {
      * @param context the task context
      */
     public void start(final TaskContext context) {
-        Browser<T> browser = BrowserFactory.create(query);
+        Browser<T> browser = createBrowser(query);
         if (title == null) {
             title = Messages.get("imobject.select.title", type);
         }
@@ -235,6 +231,16 @@ public class SelectIMObjectTask<T extends IMObject> extends AbstractTask {
 
         });
         dialog.show();
+    }
+
+    /**
+     * Creates a browser to select an object returned by the query.
+     *
+     * @param query the query
+     * @return a new browser
+     */
+    protected Browser<T> createBrowser(Query<T> query) {
+        return BrowserFactory.create(query);
     }
 
 }

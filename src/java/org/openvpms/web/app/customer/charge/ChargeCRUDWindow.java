@@ -1,31 +1,28 @@
 /*
- *  Version: 1.0
+ * Version: 1.0
  *
- *  The contents of this file are subject to the OpenVPMS License Version
- *  1.0 (the 'License'); you may not use this file except in compliance with
- *  the License. You may obtain a copy of the License at
- *  http://www.openvpms.org/license/
+ * The contents of this file are subject to the OpenVPMS License Version
+ * 1.0 (the 'License'); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * http://www.openvpms.org/license/
  *
- *  Software distributed under the License is distributed on an 'AS IS' basis,
- *  WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
- *  for the specific language governing rights and limitations under the
- *  License.
+ * Software distributed under the License is distributed on an 'AS IS' basis,
+ * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ * for the specific language governing rights and limitations under the
+ * License.
  *
- *  Copyright 2006 (C) OpenVPMS Ltd. All Rights Reserved.
- *
- *  $Id$
+ * Copyright 2013 (C) OpenVPMS Ltd. All Rights Reserved.
  */
 
 package org.openvpms.web.app.customer.charge;
 
 
 import org.openvpms.archetype.rules.finance.account.CustomerAccountArchetypes;
-import static org.openvpms.archetype.rules.finance.account.CustomerAccountArchetypes.COUNTER;
-import static org.openvpms.archetype.rules.finance.account.CustomerAccountArchetypes.INVOICE;
 import org.openvpms.component.business.domain.im.act.FinancialAct;
 import org.openvpms.component.business.service.archetype.helper.TypeHelper;
 import org.openvpms.web.app.customer.CustomerActCRUDWindow;
 import org.openvpms.web.app.workflow.payment.PaymentWorkflow;
+import org.openvpms.web.component.app.GlobalContext;
 import org.openvpms.web.component.button.ButtonSet;
 import org.openvpms.web.component.im.edit.DefaultActActions;
 import org.openvpms.web.component.im.util.Archetypes;
@@ -36,21 +33,22 @@ import org.openvpms.web.component.workflow.ReloadTask;
 import org.openvpms.web.component.workflow.TaskContext;
 import org.openvpms.web.component.workflow.TaskEvent;
 import org.openvpms.web.component.workflow.Tasks;
-import org.openvpms.web.component.app.GlobalContext;
 
 import java.math.BigDecimal;
+
+import static org.openvpms.archetype.rules.finance.account.CustomerAccountArchetypes.COUNTER;
+import static org.openvpms.archetype.rules.finance.account.CustomerAccountArchetypes.INVOICE;
 
 
 /**
  * CRUD window for customer charges.
  *
- * @author <a href="mailto:support@openvpms.org">OpenVPMS Team</a>
- * @version $LastChangedDate$
+ * @author Tim Anderson
  */
 public class ChargeCRUDWindow extends CustomerActCRUDWindow<FinancialAct> {
 
     /**
-     * Constructs a <tt>ChargeCRUDWindow</tt>.
+     * Constructs a {@code ChargeCRUDWindow}.
      * <p/>
      * This makes the default archetype {@link CustomerAccountArchetypes#INVOICE}.
      *

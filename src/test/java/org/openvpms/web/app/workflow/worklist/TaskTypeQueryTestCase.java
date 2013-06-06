@@ -12,8 +12,6 @@
  *  License.
  *
  *  Copyright 2010 (C) OpenVPMS Ltd. All Rights Reserved.
- *
- *  $Id$
  */
 package org.openvpms.web.app.workflow.worklist;
 
@@ -30,8 +28,7 @@ import org.openvpms.web.component.im.query.Query;
 /**
  * Tests the {@link TaskTypeQuery} class.
  *
- * @author <a href="mailto:support@openvpms.org">OpenVPMS Team</a>
- * @version $LastChangedDate: 2006-05-02 05:16:31Z $
+ * @author Tim Anderson
  */
 public class TaskTypeQueryTestCase extends ScheduleTypeQueryTest {
 

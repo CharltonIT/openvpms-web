@@ -1,19 +1,17 @@
 /*
- *  Version: 1.0
+ * Version: 1.0
  *
- *  The contents of this file are subject to the OpenVPMS License Version
- *  1.0 (the 'License'); you may not use this file except in compliance with
- *  the License. You may obtain a copy of the License at
- *  http://www.openvpms.org/license/
+ * The contents of this file are subject to the OpenVPMS License Version
+ * 1.0 (the 'License'); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * http://www.openvpms.org/license/
  *
- *  Software distributed under the License is distributed on an 'AS IS' basis,
- *  WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
- *  for the specific language governing rights and limitations under the
- *  License.
+ * Software distributed under the License is distributed on an 'AS IS' basis,
+ * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ * for the specific language governing rights and limitations under the
+ * License.
  *
- *  Copyright 2006 (C) OpenVPMS Ltd. All Rights Reserved.
- *
- *  $Id$
+ * Copyright 2013 (C) OpenVPMS Ltd. All Rights Reserved.
  */
 
 package org.openvpms.web.app.workflow.checkin;
@@ -51,8 +49,7 @@ import java.util.Date;
 /**
  * Check-in workflow.
  *
- * @author <a href="mailto:support@openvpms.org">OpenVPMS Team</a>
- * @version $LastChangedDate: 2006-05-02 05:16:31Z $
+ * @author Tim Anderson
  */
 public class CheckInWorkflow extends WorkflowImpl {
 
@@ -67,17 +64,11 @@ public class CheckInWorkflow extends WorkflowImpl {
     private Context external;
 
     /**
-     * Work list archetype short name.
-     */
-    protected static final String WORK_LIST_SHORTNAME = "party.organisationWorkList";
-
-
-    /**
-     * Constructs a new <tt>CheckInWorkflow</tt>.
+     * Constructs a {@code CheckInWorkflow}.
      *
      * @param customer  the customer
      * @param patient   the patient
-     * @param clinician the user. May be <tt>null</tt>
+     * @param clinician the user. May be {@code null}
      * @param context   the external context to access and update
      */
     public CheckInWorkflow(Party customer, Party patient, User clinician, Context context) {
@@ -85,7 +76,7 @@ public class CheckInWorkflow extends WorkflowImpl {
     }
 
     /**
-     * Constructs a new <tt>CheckInWorkflow</tt> from an appointment.
+     * Constructs a {@code CheckInWorkflow} from an appointment.
      *
      * @param appointment the appointment
      * @param context     the external context to access and update
@@ -95,7 +86,7 @@ public class CheckInWorkflow extends WorkflowImpl {
     }
 
     /**
-     * Default constructor.
+     * Constructs a {@code CheckInWorkflow}.
      * <p/>
      * The workflow must be initialised via {@link #initialise} prior to use.
      */
@@ -133,12 +124,12 @@ public class CheckInWorkflow extends WorkflowImpl {
     /**
      * Initialise the workflow.
      *
-     * @param appointment     the appointment. May be <tt>null</tt>
+     * @param appointment     the appointment. May be {@code null}
      * @param customer        the customer
      * @param patient         the patient
-     * @param clinician       the clinician. May be <tt>null</tt>
-     * @param taskDescription the description to assign to the <em>act.customerTask</em>. May be <tt>null</tt>
-     * @param reason          the description to assign to the <em>act.patientClinicalEvent</em>. May be <tt>null</tt>
+     * @param clinician       the clinician. May be {@code null}
+     * @param taskDescription the description to assign to the <em>act.customerTask</em>. May be {@code null}
+     * @param reason          the description to assign to the <em>act.patientClinicalEvent</em>. May be {@code null}
      * @param context         the external context to access and update
      */
     private void initialise(Act appointment, Party customer, Party patient, User clinician, String taskDescription,
@@ -185,7 +176,7 @@ public class CheckInWorkflow extends WorkflowImpl {
         addTask(new ConditionalCreateTask(CustomerAccountArchetypes.INVOICE));
 
         // edit the act.patientClinicalEvent
-        addTask(new EditVisitTask());
+        addTask(createEditVisitTask());
 
         // Reload the task to refresh the context with any edits made
         addTask(new ReloadTask(PatientArchetypes.CLINICAL_EVENT));
@@ -221,17 +212,25 @@ public class CheckInWorkflow extends WorkflowImpl {
      * Creates a new {@link SelectIMObjectTask} to select a work list.
      *
      * @param context the context
-     * @return a new task to select a worklist
+     * @return a new task to select a work list
      */
     protected SelectIMObjectTask<Party> createSelectWorkListTask(TaskContext context) {
-        return new SelectIMObjectTask<Party>(WORK_LIST_SHORTNAME, context);
+        return new SelectIMObjectTask<Party>(ScheduleArchetypes.ORGANISATION_WORKLIST, context);
     }
 
+    /**
+     * Creates a new {@link EditVisitTask}.
+     *
+     * @return a new task to edit the visit
+     */
+    protected EditVisitTask createEditVisitTask() {
+        return new EditVisitTask();
+    }
 
     private class CustomerTaskWorkflow extends WorkflowImpl {
 
         /**
-         * Constructs a new <tt>CustomerTaskWorkflow</tt>.
+         * Constructs a {@code CustomerTaskWorkflow}.
          *
          * @param taskDescription the task description
          */
@@ -256,13 +255,12 @@ public class CheckInWorkflow extends WorkflowImpl {
     private class UpdateAppointmentTask extends UpdateIMObjectTask {
 
         /**
-         * Creates a new <tt>UpdateAppointmentTask</tt>.
+         * Constructs an {@code UpdateAppointmentTask}.
          *
          * @param object     the object to update
          * @param properties properties to populate the object with
          */
-        public UpdateAppointmentTask(IMObject object,
-                                     TaskProperties properties) {
+        public UpdateAppointmentTask(IMObject object, TaskProperties properties) {
             super(object, properties);
         }
 
@@ -280,13 +278,11 @@ public class CheckInWorkflow extends WorkflowImpl {
             ActBean bean = new ActBean((Act) object);
             bean.setValue("arrivalTime", new Date());
             if (bean.getParticipantRef("participation.patient") == null) {
-                bean.addParticipation("participation.patient",
-                                      context.getPatient());
+                bean.addParticipation("participation.patient", context.getPatient());
             }
             Act act = (Act) context.getObject("act.customerTask");
             if (act != null) {
-                bean.addRelationship("actRelationship.customerAppointmentTask",
-                                     act);
+                bean.addRelationship("actRelationship.customerAppointmentTask", act);
             }
         }
     }

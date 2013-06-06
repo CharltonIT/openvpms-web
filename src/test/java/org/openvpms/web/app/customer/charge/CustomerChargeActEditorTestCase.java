@@ -1,3 +1,18 @@
+/*
+ * Version: 1.0
+ *
+ * The contents of this file are subject to the OpenVPMS License Version
+ * 1.0 (the 'License'); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * http://www.openvpms.org/license/
+ *
+ * Software distributed under the License is distributed on an 'AS IS' basis,
+ * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ * for the specific language governing rights and limitations under the
+ * License.
+ *
+ * Copyright 2013 (C) OpenVPMS Ltd. All Rights Reserved.
+ */
 package org.openvpms.web.app.customer.charge;
 
 import org.junit.Before;
@@ -49,8 +64,7 @@ import static org.junit.Assert.assertTrue;
 /**
  * Tests the {@link CustomerChargeActEditor} class.
  *
- * @author <a href="mailto:support@openvpms.org">OpenVPMS Team</a>
- * @version $LastChangedDate: $
+ * @author Tim Anderson
  */
 public class CustomerChargeActEditorTestCase extends AbstractCustomerChargeActEditorTest {
 
@@ -99,6 +113,7 @@ public class CustomerChargeActEditorTestCase extends AbstractCustomerChargeActEd
         Party location = TestHelper.createLocation();
 
         layoutContext = new DefaultLayoutContext();
+        layoutContext.getContext().setPractice(getPractice());
         layoutContext.getContext().setCustomer(customer);
         layoutContext.getContext().setUser(author);
         layoutContext.getContext().setClinician(clinician);
@@ -171,7 +186,7 @@ public class CustomerChargeActEditorTestCase extends AbstractCustomerChargeActEd
         FinancialAct charge = (FinancialAct) create(CustomerAccountArchetypes.INVOICE);
         BigDecimal total = itemTotal1.add(itemTotal2).add(itemTotal3);
 
-        ChargePopupEditorManager mgr = new ChargePopupEditorManager();
+        ChargeEditorQueue mgr = new ChargeEditorQueue();
         CustomerChargeActEditor editor = createCustomerChargeActEditor(charge, layoutContext, mgr);
         editor.getComponent();
         assertTrue(editor.isValid());
@@ -202,7 +217,7 @@ public class CustomerChargeActEditorTestCase extends AbstractCustomerChargeActEd
             FinancialAct charge = (FinancialAct) create(CustomerAccountArchetypes.INVOICE);
             BigDecimal total = itemTotal1.add(itemTotal2).add(itemTotal3);
 
-            ChargePopupEditorManager mgr = new ChargePopupEditorManager();
+            ChargeEditorQueue mgr = new ChargeEditorQueue();
             ChargeEditor editor = createCustomerChargeActEditor(charge, layoutContext, mgr);
             editor.getComponent();
             assertTrue(editor.isValid());
@@ -256,7 +271,7 @@ public class CustomerChargeActEditorTestCase extends AbstractCustomerChargeActEd
             FinancialAct charge = (FinancialAct) create(CustomerAccountArchetypes.INVOICE);
             BigDecimal total = itemTotal1.add(itemTotal2).add(itemTotal3);
 
-            ChargePopupEditorManager mgr = new ChargePopupEditorManager();
+            ChargeEditorQueue mgr = new ChargeEditorQueue();
             ChargeEditor editor = createCustomerChargeActEditor(charge, layoutContext, mgr);
             editor.getComponent();
             assertTrue(editor.isValid());
@@ -310,7 +325,7 @@ public class CustomerChargeActEditorTestCase extends AbstractCustomerChargeActEd
             FinancialAct charge = (FinancialAct) create(CustomerAccountArchetypes.INVOICE);
             BigDecimal total = itemTotal1.add(itemTotal2).add(itemTotal3);
 
-            ChargePopupEditorManager mgr = new ChargePopupEditorManager();
+            ChargeEditorQueue mgr = new ChargeEditorQueue();
             ChargeEditor editor = createCustomerChargeActEditor(charge, layoutContext, mgr);
             editor.getComponent();
 
@@ -357,7 +372,7 @@ public class CustomerChargeActEditorTestCase extends AbstractCustomerChargeActEd
             FinancialAct charge = (FinancialAct) create(CustomerAccountArchetypes.INVOICE);
             BigDecimal total = itemTotal1.add(itemTotal2).add(itemTotal3);
 
-            ChargePopupEditorManager mgr = new ChargePopupEditorManager();
+            ChargeEditorQueue mgr = new ChargeEditorQueue();
             boolean addDefaultItem = (j == 0);
             ChargeEditor editor = createCustomerChargeActEditor(charge, layoutContext, mgr, addDefaultItem);
             editor.getComponent();
@@ -420,7 +435,7 @@ public class CustomerChargeActEditorTestCase extends AbstractCustomerChargeActEd
 
         Entity template3 = addTemplate(product3);
 
-        ChargePopupEditorManager mgr = new ChargePopupEditorManager();
+        ChargeEditorQueue mgr = new ChargeEditorQueue();
         CustomerChargeActEditor editor = createCustomerChargeActEditor(charge, layoutContext, mgr);
         editor.getComponent();
         assertTrue(editor.isValid());
@@ -568,7 +583,7 @@ public class CustomerChargeActEditorTestCase extends AbstractCustomerChargeActEd
         Product product1 = createProduct(ProductArchetypes.SERVICE, itemTotal);
 
         FinancialAct charge = (FinancialAct) create(CustomerAccountArchetypes.INVOICE);
-        ChargePopupEditorManager mgr = new ChargePopupEditorManager();
+        ChargeEditorQueue mgr = new ChargeEditorQueue();
 
         CustomerChargeActEditor editor = createCustomerChargeActEditor(charge, layoutContext, mgr);
         editor.getComponent();
@@ -605,7 +620,7 @@ public class CustomerChargeActEditorTestCase extends AbstractCustomerChargeActEd
         Product product2 = createProduct(ProductArchetypes.MERCHANDISE, fixedPrice);
         Product product3 = createProduct(ProductArchetypes.SERVICE, fixedPrice);
 
-        ChargePopupEditorManager mgr = new ChargePopupEditorManager();
+        ChargeEditorQueue mgr = new ChargeEditorQueue();
         CustomerChargeActEditor editor = createCustomerChargeActEditor(charge, layoutContext, mgr);
         editor.getComponent();
         assertTrue(editor.isValid());
@@ -640,7 +655,7 @@ public class CustomerChargeActEditorTestCase extends AbstractCustomerChargeActEd
      */
     private void checkEmptyCharge(FinancialAct charge) {
         CustomerChargeActEditor editor = createCustomerChargeActEditor(charge, layoutContext,
-                                                                       new ChargePopupEditorManager());
+                                                                       new ChargeEditorQueue());
         editor.getComponent();
         assertTrue(editor.isValid());
         assertTrue(editor.save());
@@ -693,7 +708,7 @@ public class CustomerChargeActEditorTestCase extends AbstractCustomerChargeActEd
         initStock(product1, stockLocation, product1Stock);
         initStock(product2, stockLocation, product2Stock);
 
-        ChargePopupEditorManager mgr = new ChargePopupEditorManager();
+        ChargeEditorQueue mgr = new ChargeEditorQueue();
         CustomerChargeActEditor editor = createCustomerChargeActEditor(charge, layoutContext, mgr);
         editor.getComponent();
         assertTrue(editor.isValid());
@@ -759,7 +774,7 @@ public class CustomerChargeActEditorTestCase extends AbstractCustomerChargeActEd
         initStock(product1, stockLocation, product1InitialStock);
         initStock(product2, stockLocation, product2InitialStock);
 
-        ChargePopupEditorManager mgr = new ChargePopupEditorManager();
+        ChargeEditorQueue mgr = new ChargeEditorQueue();
         CustomerChargeActEditor editor = createCustomerChargeActEditor(charge, layoutContext, mgr);
         editor.getComponent();
         assertTrue(editor.isValid());
@@ -826,7 +841,7 @@ public class CustomerChargeActEditorTestCase extends AbstractCustomerChargeActEd
         templateBean.addNodeRelationship("includes", product3);
         save(template);
 
-        ChargePopupEditorManager mgr = new ChargePopupEditorManager();
+        ChargeEditorQueue mgr = new ChargeEditorQueue();
         CustomerChargeActEditor editor = createCustomerChargeActEditor(charge, layoutContext, mgr);
         editor.getComponent();
         CustomerChargeTestHelper.addItem(editor, patient, template, BigDecimal.ONE, mgr);
@@ -970,7 +985,7 @@ public class CustomerChargeActEditorTestCase extends AbstractCustomerChargeActEd
      * @return a new customer charge act editor
      */
     private ChargeEditor createCustomerChargeActEditor(final FinancialAct invoice, final LayoutContext context,
-                                                       final PopupEditorManager manager) {
+                                                       final EditorQueue manager) {
         return createCustomerChargeActEditor(invoice, context, manager, false);
     }
 
@@ -984,14 +999,14 @@ public class CustomerChargeActEditorTestCase extends AbstractCustomerChargeActEd
      * @return a new customer charge act editor
      */
     private ChargeEditor createCustomerChargeActEditor(final FinancialAct invoice, final LayoutContext context,
-                                                       final PopupEditorManager manager, boolean addDefaultItem) {
+                                                       final EditorQueue manager, boolean addDefaultItem) {
         return new ChargeEditor(invoice, context, addDefaultItem) {
             @Override
             protected ActRelationshipCollectionEditor createItemsEditor(Act act, CollectionProperty items) {
                 ActRelationshipCollectionEditor editor = super.createItemsEditor(act, items);
                 if (editor instanceof ChargeItemRelationshipCollectionEditor) {
                     // register a handler for act popups
-                    ((ChargeItemRelationshipCollectionEditor) editor).setPopupEditorManager(manager);
+                    ((ChargeItemRelationshipCollectionEditor) editor).setEditorQueue(manager);
                 }
                 return editor;
             }

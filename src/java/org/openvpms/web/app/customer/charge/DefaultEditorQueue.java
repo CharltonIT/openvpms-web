@@ -1,19 +1,17 @@
 /*
- *  Version: 1.0
+ * Version: 1.0
  *
- *  The contents of this file are subject to the OpenVPMS License Version
- *  1.0 (the 'License'); you may not use this file except in compliance with
- *  the License. You may obtain a copy of the License at
- *  http://www.openvpms.org/license/
+ * The contents of this file are subject to the OpenVPMS License Version
+ * 1.0 (the 'License'); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * http://www.openvpms.org/license/
  *
- *  Software distributed under the License is distributed on an 'AS IS' basis,
- *  WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
- *  for the specific language governing rights and limitations under the
- *  License.
+ * Software distributed under the License is distributed on an 'AS IS' basis,
+ * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ * for the specific language governing rights and limitations under the
+ * License.
  *
- *  Copyright 2006 (C) OpenVPMS Ltd. All Rights Reserved.
- *
- *  $Id$
+ * Copyright 2013 (C) OpenVPMS Ltd. All Rights Reserved.
  */
 
 package org.openvpms.web.app.customer.charge;
@@ -30,26 +28,11 @@ import java.util.LinkedList;
 
 
 /**
- * Helper to queue editing of patient medication, investigation and reminder popups, only showing one
- * dialog at a time.
+ * Helper to queue editing of patient medication, investigation and reminder popups, only showing one dialog at a time.
  *
- * @author <a href="mailto:support@openvpms.org">OpenVPMS Team</a>
- * @version $LastChangedDate$
+ * @author Tim Anderson
  */
-public class PopupEditorManager {
-
-    /**
-     * Listener to notify completion of the edit.
-     */
-    interface Listener {
-
-        /**
-         * Invoked when the edit is complete.
-         *
-         * @param skipped if <tt>true</tt> indicates that the edit was skipped
-         */
-        void completed(boolean skipped);
-    }
+public class DefaultEditorQueue implements EditorQueue {
 
     /**
      * The queue of editors.
@@ -61,12 +44,11 @@ public class PopupEditorManager {
      */
     private boolean editing;
 
-
     /**
      * Queue an edit.
      *
-     * @param editor   the medication act editor
-     * @param skip     if <tt>true</tt>, indicates that the edit can be skipped
+     * @param editor   the editor to queue
+     * @param skip     if {@code true}, indicates that the edit can be skipped
      * @param listener the listener to notify on completion
      */
     public void queue(IMObjectEditor editor, boolean skip, Listener listener) {
@@ -113,8 +95,13 @@ public class PopupEditorManager {
         edit(dialog);
     }
 
+    /**
+     * Determines if editing is complete.
+     *
+     * @return {@code true} if there are no more popups
+     */
     public boolean isComplete() {
-        return  !editing && queue.isEmpty();
+        return !editing && queue.isEmpty();
     }
 
     /**

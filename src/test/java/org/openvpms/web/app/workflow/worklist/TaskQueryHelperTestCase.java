@@ -158,7 +158,7 @@ public class TaskQueryHelperTestCase extends ArchetypeServiceTest {
      * Deterines if there are too many tasks for a worklist associated with an act
      *
      * @param tooMany if {@code true} expect too many tasks
-     * @param act the act to save if there aren't too may tasks
+     * @param act     the act to save if there aren't too may tasks
      */
     private void checkTooManyTasks(boolean tooMany, Act act) {
         assertEquals(tooMany, TaskQueryHelper.tooManyTasks(act));

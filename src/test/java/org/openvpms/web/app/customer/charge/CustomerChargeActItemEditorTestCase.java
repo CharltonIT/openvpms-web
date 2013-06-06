@@ -1,24 +1,23 @@
 /*
- *  Version: 1.0
+ * Version: 1.0
  *
- *  The contents of this file are subject to the OpenVPMS License Version
- *  1.0 (the 'License'); you may not use this file except in compliance with
- *  the License. You may obtain a copy of the License at
- *  http://www.openvpms.org/license/
+ * The contents of this file are subject to the OpenVPMS License Version
+ * 1.0 (the 'License'); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * http://www.openvpms.org/license/
  *
- *  Software distributed under the License is distributed on an 'AS IS' basis,
- *  WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
- *  for the specific language governing rights and limitations under the
- *  License.
+ * Software distributed under the License is distributed on an 'AS IS' basis,
+ * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ * for the specific language governing rights and limitations under the
+ * License.
  *
- *  Copyright 2011 (C) OpenVPMS Ltd. All Rights Reserved.
- *
- *  $Id: $
+ * Copyright 2013 (C) OpenVPMS Ltd. All Rights Reserved.
  */
 
 package org.openvpms.web.app.customer.charge;
 
 import nextapp.echo2.app.event.WindowPaneListener;
+import org.junit.Before;
 import org.junit.Test;
 import org.openvpms.archetype.rules.act.ActStatus;
 import org.openvpms.archetype.rules.finance.account.CustomerAccountArchetypes;
@@ -62,8 +61,7 @@ import static org.openvpms.web.app.customer.charge.CustomerChargeTestHelper.chec
 /**
  * Tests the {@link CustomerChargeActItemEditor} class.
  *
- * @author <a href="mailto:support@openvpms.org">OpenVPMS Team</a>
- * @version $LastChangedDate: $
+ * @author Tim Anderson
  */
 public class CustomerChargeActItemEditorTestCase extends AbstractCustomerChargeActEditorTest {
 
@@ -80,6 +78,7 @@ public class CustomerChargeActItemEditorTestCase extends AbstractCustomerChargeA
     /**
      * Sets up the test case.
      */
+    @Before
     @Override
     public void setUp() {
         super.setUp();
@@ -202,11 +201,11 @@ public class CustomerChargeActItemEditorTestCase extends AbstractCustomerChargeA
     }
 
     /**
-     * Verifies that the clinician can be cleared, as a test for OVPMS-1104/
+     * Verifies that the clinician can be cleared, as a test for OVPMS-1104.
      */
     @Test
     public void testClearClinician() {
-        LayoutContext context = new DefaultLayoutContext();
+        LayoutContext layout = new DefaultLayoutContext();
         Party patient = TestHelper.createPatient();
         User author = TestHelper.createUser();
         User clinician = TestHelper.createUser();
@@ -229,10 +228,10 @@ public class CustomerChargeActItemEditorTestCase extends AbstractCustomerChargeA
         Product product = createProduct(ProductArchetypes.MERCHANDISE, fixedCost, fixedPrice, unitCost, unitPrice);
 
         // set up the context
-        context.getContext().setUser(author); // to propagate to acts
+        layout.getContext().setUser(author); // to propagate to acts
 
         // create the editor
-        TestCustomerChargeActItemEditor editor = new TestCustomerChargeActItemEditor(item, charge, context);
+        TestCustomerChargeActItemEditor editor = new TestCustomerChargeActItemEditor(item, charge, layout);
         editor.getComponent();
         assertFalse(editor.isValid());
 
@@ -354,8 +353,8 @@ public class CustomerChargeActItemEditorTestCase extends AbstractCustomerChargeA
         assertFalse(editor.isValid());
 
         // register a handler for act popups
-        ChargePopupEditorManager mgr = new ChargePopupEditorManager();
-        editor.setPopupEditorManager(mgr);
+        ChargeEditorQueue mgr = new ChargeEditorQueue();
+        editor.setEditorQueue(mgr);
 
         // populate quantity, patient, product. If product1 is a medication, it should trigger a patient medication
         // editor popup
@@ -446,7 +445,7 @@ public class CustomerChargeActItemEditorTestCase extends AbstractCustomerChargeA
                   fixedPrice2, discount2, tax2, total2);
         itemBean = new ActBean(item);
         if (TypeHelper.isA(item, CustomerAccountArchetypes.INVOICE_ITEM)
-                && TypeHelper.isA(product2, ProductArchetypes.MEDICATION)) {
+            && TypeHelper.isA(product2, ProductArchetypes.MEDICATION)) {
             // verify there is a medication act. Note that it retains the original author
             checkMedication(item, patient2, product2, author1, clinician2);
         } else {
@@ -508,8 +507,8 @@ public class CustomerChargeActItemEditorTestCase extends AbstractCustomerChargeA
         assertFalse(editor.isValid());
 
         // register a handler for act popups
-        ChargePopupEditorManager mgr = new ChargePopupEditorManager();
-        editor.setPopupEditorManager(mgr);
+        ChargeEditorQueue mgr = new ChargeEditorQueue();
+        editor.setEditorQueue(mgr);
 
         // populate quantity, patient, product
         editor.setQuantity(quantity);

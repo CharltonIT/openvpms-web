@@ -26,7 +26,6 @@ import org.openvpms.component.business.domain.im.common.IMObject;
 import org.openvpms.component.business.domain.im.datatypes.quantity.Money;
 import org.openvpms.component.business.domain.im.security.User;
 import org.openvpms.component.business.service.archetype.helper.ActBean;
-import org.openvpms.web.app.customer.charge.AbstractCustomerChargeActEditor;
 import org.openvpms.web.component.im.act.ActHelper;
 import org.openvpms.web.component.im.edit.act.ActRelationshipCollectionEditor;
 import org.openvpms.web.component.im.filter.FilterHelper;
@@ -45,6 +44,7 @@ import org.openvpms.web.component.property.PropertySet;
 import org.openvpms.web.component.property.SimpleProperty;
 import org.openvpms.web.resource.util.Messages;
 import org.openvpms.web.system.ServiceHelper;
+import org.openvpms.web.app.customer.charge.AbstractCustomerChargeActEditor;
 
 import java.math.BigDecimal;
 import java.util.Date;
@@ -207,7 +207,6 @@ public class VisitChargeEditor extends AbstractCustomerChargeActEditor {
         List<FinancialAct> items = getItems().getPatientActs();
         event = IMObjectHelper.reload(event); // make sure the most recent instance is being used
         if (event != null && !items.isEmpty()) {
-            // make sure the current event is being used
             ChargeItemEventLinker linker = new ChargeItemEventLinker(null, null,
                                                                      ServiceHelper.getArchetypeService());
             linker.link(event, items);

@@ -12,8 +12,6 @@
  *  License.
  *
  *  Copyright 2006 (C) OpenVPMS Ltd. All Rights Reserved.
- *
- *  $Id$
  */
 
 package org.openvpms.web.app.customer.charge;
@@ -22,7 +20,6 @@ import org.openvpms.archetype.rules.act.FinancialActStatus;
 import org.openvpms.component.business.domain.im.act.FinancialAct;
 import org.openvpms.component.business.domain.im.party.Party;
 import org.openvpms.web.app.customer.CustomerActWorkspace;
-import org.openvpms.web.component.subsystem.CRUDWindow;
 import org.openvpms.web.component.im.query.ActQuery;
 import org.openvpms.web.component.im.query.ActStatuses;
 import org.openvpms.web.component.im.query.Browser;
@@ -31,13 +28,13 @@ import org.openvpms.web.component.im.query.DefaultActQuery;
 import org.openvpms.web.component.im.query.Query;
 import org.openvpms.web.component.im.table.IMObjectTableModel;
 import org.openvpms.web.component.im.table.act.ActAmountTableModel;
+import org.openvpms.web.component.subsystem.CRUDWindow;
 
 
 /**
  * Customer charges workspace.
  *
- * @author <a href="mailto:support@openvpms.org">OpenVPMS Team</a>
- * @version $LastChangedDate$
+ * @author Tim Anderson
  */
 public class ChargeWorkspace extends CustomerActWorkspace<FinancialAct> {
 
@@ -49,16 +46,14 @@ public class ChargeWorkspace extends CustomerActWorkspace<FinancialAct> {
     /**
      * The customer archetype short names.
      */
-    private static final String[] CUSTOMER_SHORT_NAMES = {
-            "party.customer*", "party.organisationOTC"
-    };
+    private static final String[] CUSTOMER_SHORT_NAMES = {"party.customer*", "party.organisationOTC"};
 
 
     /**
-     * Constructs a new <tt>ChargeWorkspace</tt>.
+     * Constructs a {@code ChargeWorkspace}.
      */
     public ChargeWorkspace() {
-        super("customer", "invoice");
+        super("customer", "charge");
         setArchetypes(Party.class, CUSTOMER_SHORT_NAMES);
         setChildArchetypes(FinancialAct.class, "act.customerAccountCharges*");
     }
