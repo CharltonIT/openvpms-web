@@ -53,7 +53,7 @@ public class ChargeWorkspace extends CustomerActWorkspace<FinancialAct> {
      * Constructs a {@code ChargeWorkspace}.
      */
     public ChargeWorkspace() {
-        super("customer", "charge");
+        super("customer", "invoice");
         setArchetypes(Party.class, CUSTOMER_SHORT_NAMES);
         setChildArchetypes(FinancialAct.class, "act.customerAccountCharges*");
     }
