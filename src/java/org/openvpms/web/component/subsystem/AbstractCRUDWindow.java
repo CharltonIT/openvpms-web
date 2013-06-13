@@ -1,19 +1,17 @@
 /*
- *  Version: 1.0
+ * Version: 1.0
  *
- *  The contents of this file are subject to the OpenVPMS License Version
- *  1.0 (the 'License'); you may not use this file except in compliance with
- *  the License. You may obtain a copy of the License at
- *  http://www.openvpms.org/license/
+ * The contents of this file are subject to the OpenVPMS License Version
+ * 1.0 (the 'License'); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * http://www.openvpms.org/license/
  *
- *  Software distributed under the License is distributed on an 'AS IS' basis,
- *  WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
- *  for the specific language governing rights and limitations under the
- *  License.
+ * Software distributed under the License is distributed on an 'AS IS' basis,
+ * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ * for the specific language governing rights and limitations under the
+ * License.
  *
- *  Copyright 2006 (C) OpenVPMS Ltd. All Rights Reserved.
- *
- *  $Id$
+ * Copyright 2013 (C) OpenVPMS Ltd. All Rights Reserved.
  */
 
 package org.openvpms.web.component.subsystem;
@@ -59,10 +57,29 @@ import org.openvpms.web.resource.util.Messages;
 /**
  * Abstract implementation of the {@link CRUDWindow} interface.
  *
- * @author <a href="mailto:support@openvpms.org">OpenVPMS Team</a>
- * @version $LastChangedDate$
+ * @author Tim Anderson
  */
 public abstract class AbstractCRUDWindow<T extends IMObject> implements CRUDWindow<T> {
+
+    /**
+     * Edit button identifier.
+     */
+    public static final String EDIT_ID = "edit";
+
+    /**
+     * New button identifier.
+     */
+    public static final String NEW_ID = "new";
+
+    /**
+     * Delete button identifier.
+     */
+    public static final String DELETE_ID = "delete";
+
+    /**
+     * Print button identifier.
+     */
+    public static final String PRINT_ID = "print";
 
     /**
      * The object.
@@ -99,29 +116,9 @@ public abstract class AbstractCRUDWindow<T extends IMObject> implements CRUDWind
      */
     private MailContext context;
 
-    /**
-     * Edit button identifier.
-     */
-    protected static final String EDIT_ID = "edit";
 
     /**
-     * New button identifier.
-     */
-    protected static final String NEW_ID = "new";
-
-    /**
-     * Delete button identifier.
-     */
-    protected static final String DELETE_ID = "delete";
-
-    /**
-     * Print button identifier.
-     */
-    protected static final String PRINT_ID = "print";
-
-
-    /**
-     * Constructs a new <tt>AbstractCRUDWindow</tt>.
+     * Constructs an {@code AbstractCRUDWindow}.
      *
      * @param archetypes the archetypes that this may create
      * @param actions    determines the operations that may be performed on the selected object
@@ -164,7 +161,7 @@ public abstract class AbstractCRUDWindow<T extends IMObject> implements CRUDWind
     /**
      * Sets the object.
      *
-     * @param object the object. May be <tt>null</tt>
+     * @param object the object. May be {@code null}
      */
     public void setObject(T object) {
         this.object = object;
@@ -183,7 +180,7 @@ public abstract class AbstractCRUDWindow<T extends IMObject> implements CRUDWind
     /**
      * Returns the object.
      *
-     * @return the object, or <tt>null</tt> if there is none set
+     * @return the object, or {@code null} if there is none set
      */
     public T getObject() {
         return object;
@@ -192,7 +189,7 @@ public abstract class AbstractCRUDWindow<T extends IMObject> implements CRUDWind
     /**
      * Returns the object's archetype descriptor.
      *
-     * @return the object's archetype descriptor or <tt>null</tt> if there
+     * @return the object's archetype descriptor or {@code null} if there
      *         is no object set
      */
     public ArchetypeDescriptor getArchetypeDescriptor() {
@@ -214,7 +211,7 @@ public abstract class AbstractCRUDWindow<T extends IMObject> implements CRUDWind
     /**
      * Determines if the current object can be edited.
      *
-     * @return <tt>true</tt> if an object exists and the edit button is enabled
+     * @return {@code true} if an object exists and the edit button is enabled
      */
     public boolean canEdit() {
         boolean edit = false;
@@ -279,7 +276,7 @@ public abstract class AbstractCRUDWindow<T extends IMObject> implements CRUDWind
      * <p/>
      * This is used to determine email addresses when mailing.
      *
-     * @param context the mail context. May be <tt>null</tt>
+     * @param context the mail context. May be {@code null}
      */
     public void setMailContext(MailContext context) {
         this.context = context;
@@ -288,7 +285,7 @@ public abstract class AbstractCRUDWindow<T extends IMObject> implements CRUDWind
     /**
      * Returns the mail context.
      *
-     * @return the mail context. May be <tt>null</tt>
+     * @return the mail context. May be {@code null}
      */
     public MailContext getMailContext() {
         return context;
@@ -361,7 +358,7 @@ public abstract class AbstractCRUDWindow<T extends IMObject> implements CRUDWind
 
     /**
      * Helper to create a new button with id {@link #EDIT_ID} linked to {@link #edit()}.
-     * Editing will only be invoked if {@link #canEdit} is <tt>true</tt>
+     * Editing will only be invoked if {@link #canEdit} is {@code true}
      *
      * @return a new button
      */
@@ -514,8 +511,7 @@ public abstract class AbstractCRUDWindow<T extends IMObject> implements CRUDWind
      * @param context the layout context
      * @return a new editor
      */
-    protected IMObjectEditor createEditor(T object,
-                                          LayoutContext context) {
+    protected IMObjectEditor createEditor(T object, LayoutContext context) {
         return IMObjectEditorFactory.create(object, context);
     }
 

@@ -167,6 +167,14 @@ public class VisitEditorDialog extends PopupDialog {
         }
         addButton(OK_ID);
         addButton(CANCEL_ID);
+        if (getEditor().getChargeEditor() == null) {
+            buttons.add(VisitChargeCRUDWindow.NEW_ID, new ActionListener() {
+                @Override
+                public void onAction(ActionEvent event) {
+                    onNew();
+                }
+            });
+        }
         buttons.add(VisitChargeCRUDWindow.COMPLETED_ID, new ActionListener() {
             @Override
             public void onAction(ActionEvent event) {
@@ -180,6 +188,14 @@ public class VisitEditorDialog extends PopupDialog {
             }
         });
         editor.setButtons(buttons);
+    }
+
+    /**
+     * Invoked when the 'new' button is pressed. This creates a new invoice if the current invoice is posted.
+     */
+    protected void onNew() {
+        editor.getCharge().create();
+        onInvoiceSelected(); // need to remove the New button and add the Apply button
     }
 
     /**
