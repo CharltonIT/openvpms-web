@@ -204,7 +204,7 @@ public class VisitEditorDialog extends PopupDialog {
     private void onComplete() {
         CustomerChargeDocuments docs = new CustomerChargeDocuments(editor.getChargeEditor());
         List<Act> existing = docs.getUnprinted();
-        if (editor.getCharge().complete()) {
+        if (editor.saveAsCompleted()) {
             printNew(docs, existing);
         }
     }
@@ -215,7 +215,7 @@ public class VisitEditorDialog extends PopupDialog {
     private void onInProgress() {
         CustomerChargeDocuments docs = new CustomerChargeDocuments(editor.getChargeEditor());
         List<Act> existing = docs.getUnprinted();
-        if (editor.getCharge().inProgress()) {
+        if (editor.saveAsInProgress()) {
             printNew(docs, existing);
         }
     }
