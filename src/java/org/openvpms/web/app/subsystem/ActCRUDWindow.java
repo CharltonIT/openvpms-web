@@ -35,6 +35,7 @@ import org.openvpms.web.component.im.print.IMPrinterFactory;
 import org.openvpms.web.component.im.print.InteractiveIMPrinter;
 import org.openvpms.web.component.im.report.ContextDocumentTemplateLocator;
 import org.openvpms.web.component.im.util.Archetypes;
+import org.openvpms.web.component.im.util.IMObjectHelper;
 import org.openvpms.web.component.print.PrinterListener;
 import org.openvpms.web.component.subsystem.AbstractViewCRUDWindow;
 import org.openvpms.web.component.subsystem.CRUDWindowListener;

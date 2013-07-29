@@ -16,7 +16,9 @@
 package org.openvpms.web.app.patient.history;
 
 import org.openvpms.archetype.rules.finance.account.CustomerAccountArchetypes;
+import org.openvpms.archetype.rules.patient.PatientArchetypes;
 import org.openvpms.component.business.domain.im.act.Act;
+import org.openvpms.component.business.domain.im.act.ActRelationship;
 import org.openvpms.component.business.service.archetype.helper.TypeHelper;
 import org.openvpms.web.component.im.edit.ActActions;
 
@@ -60,7 +62,21 @@ public class PatientHistoryActions extends ActActions<Act> {
      */
     @Override
     public boolean canDelete(Act act) {
-        return !TypeHelper.isA(act, CustomerAccountArchetypes.INVOICE_ITEM) && super.canDelete(act);
+        if (act == null) {
+            return false;
+        }
+        if (TypeHelper.isA(act, CustomerAccountArchetypes.INVOICE_ITEM)) {
+            return false;
+        } else if (TypeHelper.isA(act, PatientArchetypes.CLINICAL_EVENT, PatientArchetypes.CLINICAL_PROBLEM)) {
+            return act.getSourceActRelationships().isEmpty();
+        } else {
+            for (ActRelationship rel : act.getTargetActRelationships()) {
+                if (TypeHelper.isA(rel.getSource(), CustomerAccountArchetypes.INVOICE_ITEM)) {
+                    return false;
+                }
+            }
+        }
+        return true;
     }
 
     /**
