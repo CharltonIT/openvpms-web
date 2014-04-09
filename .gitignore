@@ -4,3 +4,8 @@
 /*.ipr
 /*.idea
 /openvpms-web-app/target/
+/openvpms-web-workspaces/target
+/openvpms-macro/target
+/openvpms-web-component/target
+/openvpms-web-echo/target
+/openvpms-web-resource/target
