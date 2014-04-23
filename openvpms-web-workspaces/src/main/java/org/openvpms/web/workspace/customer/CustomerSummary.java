@@ -31,6 +31,8 @@ import org.openvpms.component.business.domain.im.act.Act;
 import org.openvpms.component.business.domain.im.lookup.Lookup;
 import org.openvpms.component.business.domain.im.party.Contact;
 import org.openvpms.component.business.domain.im.party.Party;
+import org.openvpms.component.business.domain.im.security.User;
+import org.openvpms.component.business.service.archetype.helper.IMObjectBean;
 import org.openvpms.web.component.app.Context;
 import org.openvpms.web.component.app.LocalContext;
 import org.openvpms.web.component.im.contact.ContactHelper;
@@ -53,6 +55,7 @@ import org.openvpms.web.workspace.alert.AlertSummary;
 import org.openvpms.web.workspace.customer.note.CustomerAlertQuery;
 import org.openvpms.web.workspace.summary.PartySummary;
 
+
 import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
@@ -74,6 +77,8 @@ public class CustomerSummary extends PartySummary {
      * The account rules.
      */
     private CustomerAccountRules accountRules;
+    private Party practice;
+    private boolean showAccountSummary;
 
     /**
      * Constructs a {@code CustomerSummary}.
@@ -110,7 +115,14 @@ public class CustomerSummary extends PartySummary {
         if (email != null) {
             column.add(RowFactory.create("Inset.Small", getEmail(email)));
         }
-
+        final Context context = getContext();
+        Party practice=context.getPractice();
+        showAccountSummary = true;
+        if (practice !=null){
+            IMObjectBean bean = new IMObjectBean(practice);
+            showAccountSummary = bean.getBoolean("showCustomerBalanceWindow");
+        }
+        if (showAccountSummary){
         Label balanceTitle = create("customer.account.balance");
         BigDecimal balance = accountRules.getBalance(party);
         Label balanceValue = create(balance);
@@ -131,20 +143,22 @@ public class CustomerSummary extends PartySummary {
         BigDecimal unbilled = accountRules.getUnbilledAmount(party);
         Label unbilledValue = create(unbilled);
 
-        Grid grid = GridFactory.create(2, balanceTitle, balanceValue,
+        Grid Balgrid = GridFactory.create(2, balanceTitle, balanceValue,
                                        overdueTitle, overdueValue,
                                        currentTitle, currentValue,
                                        creditTitle, creditValue,
                                        unbilledTitle, unbilledValue);
-        column.add(grid);
+        column.add(Balgrid);
+        }  
         AlertSummary alerts = getAlertSummary(party);
         if (alerts != null) {
-            grid.add(create("alerts.title"));
+            Label alertTitle = create("alerts.title");
+            Grid AlertGrid = GridFactory.create(2,alertTitle);
+            column.add(AlertGrid);
             column.add(ColumnFactory.create("Inset.Small", alerts.getComponent()));
         }
         Column result = ColumnFactory.create("PartySummary", column);
-        final Context context = getContext();
-        if (SMSHelper.isSMSEnabled(context.getPractice())) {
+        if (SMSHelper.isSMSEnabled(practice)) {
             final List<Contact> contacts = ContactHelper.getSMSContacts(party);
             if (!contacts.isEmpty()) {
                 Context local = new LocalContext(context);

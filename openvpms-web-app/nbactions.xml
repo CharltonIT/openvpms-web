@@ -1,0 +1,27 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<actions>
+        <action>
+            <actionName>CUSTOM-Tomcat</actionName>
+            <displayName>Tomcat</displayName>
+            <goals>
+                <goal>tomcat:run</goal>
+            </goals>
+        </action>
+        <action>
+            <actionName>CUSTOM-Tomcat Run in Debug</actionName>
+            <displayName>Tomcat Run in Debug</displayName>
+            <goals>
+                <goal>tomcat:run</goal>
+            </goals>
+            <properties>
+                <jpda.listen>maven</jpda.listen>
+            </properties>
+        </action>
+        <action>
+            <actionName>CUSTOM-Tomcat STOP</actionName>
+            <displayName>Tomcat STOP</displayName>
+            <goals>
+                <goal>tomcat:stop</goal>
+            </goals>
+        </action>
+    </actions>
