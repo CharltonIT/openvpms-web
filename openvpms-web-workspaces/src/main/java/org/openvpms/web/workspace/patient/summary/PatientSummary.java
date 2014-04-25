@@ -25,6 +25,7 @@ import org.openvpms.archetype.rules.patient.PatientArchetypes;
 import org.openvpms.archetype.rules.patient.PatientRules;
 import org.openvpms.archetype.rules.patient.reminder.ReminderArchetypes;
 import org.openvpms.archetype.rules.patient.reminder.ReminderRules;
+import org.openvpms.archetype.rules.party.PartyRules;
 import org.openvpms.component.business.domain.im.act.Act;
 import org.openvpms.component.business.domain.im.party.Party;
 import org.openvpms.component.system.common.query.IConstraint;
@@ -80,7 +81,11 @@ public class PatientSummary extends PartySummary {
      * The reminder rules.
      */
     private final ReminderRules reminderRules;
-
+    
+    /*
+    * The party rules
+    */
+    private final PartyRules partyRules;
 
     /**
      * Constructs a {@link PatientSummary}.
@@ -92,6 +97,7 @@ public class PatientSummary extends PartySummary {
         super(context, help);
         rules = ServiceHelper.getBean(PatientRules.class);
         reminderRules = new ReminderRules(ServiceHelper.getArchetypeService(), rules);
+        partyRules =  ServiceHelper.getBean(PartyRules.class);
     }
 
     /**
@@ -272,6 +278,13 @@ public class PatientSummary extends PartySummary {
             microchip.setText(identity);
             grid.add(microchipTitle);
             grid.add(microchip);
+        }
+    }
+    protected void addRefferalVet(Party patient, Grid grid) {
+        
+        Party referralVet = rules.getReferralVet(patient, new Date());
+        if (referralVet != null) {
+            
         }
     }
 
