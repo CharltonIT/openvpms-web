@@ -107,6 +107,9 @@ public class CustomerSummary extends PartySummary {
         customerName.setStyleName("hyperlink-bold");
         column.add(RowFactory.create("Inset.Small",
                                      customerName.getComponent()));
+        Label customerID = LabelFactory.create();
+        customerID.setText(String.valueOf("ID: "+party.getId()));
+        column.add(RowFactory.create("Inset.Small", customerID));
         Label phone = LabelFactory.create();
         phone.setText(partyRules.getTelephone(party, true));
         column.add(RowFactory.create("Inset.Small", phone));

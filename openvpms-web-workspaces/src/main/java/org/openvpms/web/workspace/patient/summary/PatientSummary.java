@@ -13,7 +13,6 @@
  *
  * Copyright 2013 (C) OpenVPMS Ltd. All Rights Reserved.
  */
-
 package org.openvpms.web.workspace.patient.summary;
 
 import nextapp.echo2.app.Component;
@@ -25,7 +24,7 @@ import org.openvpms.archetype.rules.patient.PatientArchetypes;
 import org.openvpms.archetype.rules.patient.PatientRules;
 import org.openvpms.archetype.rules.patient.reminder.ReminderArchetypes;
 import org.openvpms.archetype.rules.patient.reminder.ReminderRules;
-import org.openvpms.archetype.rules.party.PartyRules;
+import org.openvpms.archetype.rules.supplier.SupplierRules;
 import org.openvpms.component.business.domain.im.act.Act;
 import org.openvpms.component.business.domain.im.party.Party;
 import org.openvpms.component.system.common.query.IConstraint;
@@ -64,7 +63,6 @@ import java.util.List;
 
 import static org.openvpms.archetype.rules.patient.PatientArchetypes.PATIENT_PARTICIPATION;
 
-
 /**
  * Renders Patient Summary Information.
  *
@@ -81,23 +79,20 @@ public class PatientSummary extends PartySummary {
      * The reminder rules.
      */
     private final ReminderRules reminderRules;
-    
-    /*
-    * The party rules
-    */
-    private final PartyRules partyRules;
 
+    /*
+     * The party rules
+     */
     /**
      * Constructs a {@link PatientSummary}.
      *
      * @param context the context
-     * @param help    the help context
+     * @param help the help context
      */
     public PatientSummary(Context context, HelpContext help) {
         super(context, help);
         rules = ServiceHelper.getBean(PatientRules.class);
         reminderRules = new ReminderRules(ServiceHelper.getArchetypeService(), rules);
-        partyRules =  ServiceHelper.getBean(PartyRules.class);
     }
 
     /**
@@ -128,11 +123,14 @@ public class PatientSummary extends PartySummary {
 
         return ColumnFactory.create("PartySummary", column);
     }
-
+    /**
+     * @param patient
+     * @return
+     */
     protected List<Component> getSummaryComponents(Party patient) {
         List<Component> result = new ArrayList<Component>();
         result.add(getPatientName(patient));
-
+        result.add(getPatientId(patient));
         if (rules.isDeceased(patient)) {
             result.add(getDeceased());
         }
@@ -140,6 +138,7 @@ public class PatientSummary extends PartySummary {
         result.add(getSpecies(patient));
         result.add(getBreed(patient));
         result.add(createSummaryGrid(patient));
+        result.add(addRefferalVet(patient));
         return result;
     }
 
@@ -156,11 +155,18 @@ public class PatientSummary extends PartySummary {
         } else {
             name += " (" + getPatientSex(patient) + " " + Messages.get("patient.entire") + ")";
         }
-        name += " ID:" + getPatientID(patient);
         IMObjectReferenceViewer patientName = new IMObjectReferenceViewer(patient.getObjectReference(), name, true,
-                                                                          getContext());
+                getContext());
         patientName.setStyleName("hyperlink-bold");
         return patientName.getComponent();
+    }
+    /**
+     * @param patient 
+     * @return
+     */
+    protected Component getPatientId(Party patient) {
+        String idLabel = "ID: " + getID(patient);
+        return LabelFactory.create(idLabel);
     }
 
     /**
@@ -216,7 +222,7 @@ public class PatientSummary extends PartySummary {
      * Displays a summary of patient reminders in a grid.
      *
      * @param patient the patient
-     * @param grid    the summary grid
+     * @param grid the summary grid
      */
     protected void addReminders(final Party patient, Grid grid) {
         Label reminderTitle = LabelFactory.create("patient.reminders");
@@ -241,7 +247,7 @@ public class PatientSummary extends PartySummary {
      * Displays the patient age in a grid.
      *
      * @param patient the patient
-     * @param grid    the grid
+     * @param grid the grid
      */
     protected void addAge(Party patient, Grid grid) {
         Label ageTitle = LabelFactory.create("patient.age");
@@ -255,7 +261,7 @@ public class PatientSummary extends PartySummary {
      * Displays the patient weight in a grid.
      *
      * @param patient the patient
-     * @param grid    the grid
+     * @param grid the grid
      */
     private void addWeight(Party patient, Grid grid) {
         Label weightTitle = LabelFactory.create("patient.weight");
@@ -269,7 +275,7 @@ public class PatientSummary extends PartySummary {
      * Displays the patient microchip in a grid.
      *
      * @param patient the patient
-     * @param grid    the grid
+     * @param grid the grid
      */
     protected void addMicrochip(Party patient, Grid grid) {
         String identity = rules.getMicrochip(patient);
@@ -281,16 +287,40 @@ public class PatientSummary extends PartySummary {
             grid.add(microchip);
         }
     }
-    protected void addRefferalVet(Party patient, Grid grid) {
-        
-        Party referralVetparty = rules.getReferralVet(patient, new Date());
+
+    /**
+     * Displays the referral vet if indicated otherwise is empty.
+     *
+     * @param patient
+     * @return Grid with referral Vet info
+     */
+    protected Grid addRefferalVet(Party patient) {
+        Grid grid = GridFactory.create(1);
+        Party referralVetparty = rules.gerReferralVet(patient);
         if (referralVetparty != null) {
-            Label referralVetTitle = LabelFactory.create("patient.refferralvet");
+            Label referralVetTitle = LabelFactory.create("patient.referralvet");
             Label referralVet = LabelFactory.create();
             referralVet.setText(referralVetparty.getName());
             grid.add(referralVetTitle);
             grid.add(referralVet);
+            grid.add(getReferralPractice(referralVetparty));
         }
+        return grid;
+    }
+
+    /**
+     * Returns a component displaying the referral practice.
+     *
+     * @param referralVet the referring vet as a party.
+     * @return referral practice hyperlinked.
+     */
+    protected Component getReferralPractice(Party referralVet) {
+        SupplierRules supplierrules = new SupplierRules(ServiceHelper.getArchetypeService());
+        Party referralPractice = supplierrules.getReferralVetPractice(referralVet, new Date());
+        IMObjectReferenceViewer referralPracticeName = new IMObjectReferenceViewer(referralPractice.getObjectReference(), referralPractice.getName(), true,
+                getContext());
+        referralPracticeName.setStyleName("hyperlink-bold");
+        return referralPracticeName.getComponent();
     }
 
     /**
@@ -306,7 +336,7 @@ public class PatientSummary extends PartySummary {
     /**
      * Returns outstanding alerts for a patient.
      *
-     * @param patient  the patient
+     * @param patient the patient
      * @param pageSize the no. of alerts to return per page
      * @return the set of outstanding alerts for the patient
      */
@@ -324,7 +354,7 @@ public class PatientSummary extends PartySummary {
     /**
      * Returns outstanding acts for a patient.
      *
-     * @param patient  the patient
+     * @param patient the patient
      * @param pageSize the no. of alerts to return per page
      * @return the set IN_PROGRESS acts for the patient
      */
@@ -367,7 +397,7 @@ public class PatientSummary extends PartySummary {
      */
     private void onShowReminders(Party patient) {
         PagedIMTable<Act> table = new PagedIMTable<Act>(new ReminderTableModel(getContext(), getHelpContext()),
-                                                        getReminders(patient));
+                getReminders(patient));
         table.getTable().setDefaultRenderer(Object.class, new ReminderTableCellRenderer());
         new ViewerDialog(Messages.get("patient.summary.reminders"), "PatientSummary.ReminderDialog", table);
     }
@@ -412,10 +442,10 @@ public class PatientSummary extends PartySummary {
         String weight = rules.getPatientWeight(patient);
         return (weight != null) ? weight : Messages.get("patient.noweight");
     }
-    
-    private String getPatientID(Party patient) {
+
+    private String getID(Party patient) {
         return rules.getID(patient);
-        
+
     }
 
     /**
@@ -430,11 +460,11 @@ public class PatientSummary extends PartySummary {
         ShortNameConstraint archetypes = new ShortNameConstraint(
                 shortNames, true, true);
         ParticipantConstraint[] participants = {
-                new ParticipantConstraint("patient", "participation.patient", patient)
+            new ParticipantConstraint("patient", "participation.patient", patient)
         };
         SortConstraint[] sort = {new NodeSortConstraint("endTime", true)};
         return new ActResultSet<Act>(archetypes, participants, null,
-                                     statuses, false, null, 10, sort);
+                statuses, false, null, 10, sort);
     }
 
     /**
@@ -477,7 +507,7 @@ public class PatientSummary extends PartySummary {
          * Constructs a {@code ReminderTableModel}.
          *
          * @param context the context
-         * @param help    the help context
+         * @param help the help context
          */
         public ReminderTableModel(Context context, HelpContext help) {
             super(new String[]{ReminderArchetypes.REMINDER}, createLayoutContext(context, help));
