@@ -156,6 +156,7 @@ public class PatientSummary extends PartySummary {
         } else {
             name += " (" + getPatientSex(patient) + " " + Messages.get("patient.entire") + ")";
         }
+        name += " ID:" + getPatientID(patient);
         IMObjectReferenceViewer patientName = new IMObjectReferenceViewer(patient.getObjectReference(), name, true,
                                                                           getContext());
         patientName.setStyleName("hyperlink-bold");
@@ -282,9 +283,13 @@ public class PatientSummary extends PartySummary {
     }
     protected void addRefferalVet(Party patient, Grid grid) {
         
-        Party referralVet = rules.getReferralVet(patient, new Date());
-        if (referralVet != null) {
-            
+        Party referralVetparty = rules.getReferralVet(patient, new Date());
+        if (referralVetparty != null) {
+            Label referralVetTitle = LabelFactory.create("patient.refferralvet");
+            Label referralVet = LabelFactory.create();
+            referralVet.setText(referralVetparty.getName());
+            grid.add(referralVetTitle);
+            grid.add(referralVet);
         }
     }
 
@@ -406,6 +411,11 @@ public class PatientSummary extends PartySummary {
     private String getPatientWeight(Party patient) {
         String weight = rules.getPatientWeight(patient);
         return (weight != null) ? weight : Messages.get("patient.noweight");
+    }
+    
+    private String getPatientID(Party patient) {
+        return rules.getID(patient);
+        
     }
 
     /**

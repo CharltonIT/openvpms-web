@@ -9,3 +9,5 @@
 /openvpms-web-component/target
 /openvpms-web-echo/target
 /openvpms-web-resource/target
+/openvpms-web-app/openvpms-full.log
+/openvpms-web-app/openvpms.log

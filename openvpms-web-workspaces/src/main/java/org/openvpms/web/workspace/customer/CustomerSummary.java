@@ -108,7 +108,7 @@ public class CustomerSummary extends PartySummary {
         column.add(RowFactory.create("Inset.Small",
                                      customerName.getComponent()));
         Label phone = LabelFactory.create();
-        phone.setText(partyRules.getTelephone(party));
+        phone.setText(partyRules.getTelephone(party, true));
         column.add(RowFactory.create("Inset.Small", phone));
 
         Contact email = ContactHelper.getPreferredEmail(party);
@@ -135,19 +135,19 @@ public class CustomerSummary extends PartySummary {
         BigDecimal current = balance.subtract(overdue);
         Label currentValue = create(current);
 
-        Label creditTitle = create("customer.account.credit");
-        BigDecimal credit = accountRules.getCreditBalance(party);
-        Label creditValue = create(credit);
-
         Label unbilledTitle = create("customer.account.unbilled");
         BigDecimal unbilled = accountRules.getUnbilledAmount(party);
         Label unbilledValue = create(unbilled);
+        
+        Label effectiveTitle = create("customer.account.effective");
+        BigDecimal effective = balance.add(unbilled);
+        Label effectiveValue = create(effective);
 
         Grid Balgrid = GridFactory.create(2, balanceTitle, balanceValue,
                                        overdueTitle, overdueValue,
                                        currentTitle, currentValue,
-                                       creditTitle, creditValue,
-                                       unbilledTitle, unbilledValue);
+                                       unbilledTitle, unbilledValue,
+                                       effectiveTitle, effectiveValue);
         column.add(Balgrid);
         }  
         AlertSummary alerts = getAlertSummary(party);
