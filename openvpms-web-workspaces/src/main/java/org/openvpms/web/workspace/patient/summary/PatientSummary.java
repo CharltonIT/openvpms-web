@@ -117,7 +117,6 @@ public class PatientSummary extends PartySummary {
         }
         AlertSummary alerts = getAlertSummary(patient);
         if (alerts != null) {
-            column.add(ColumnFactory.create("Inset.Small", LabelFactory.create("alerts.patient")));
             column.add(ColumnFactory.create("Inset.Small", alerts.getComponent()));
         }
 
@@ -165,8 +164,10 @@ public class PatientSummary extends PartySummary {
      * @return
      */
     protected Component getPatientId(Party patient) {
-        String idLabel = "ID: " + getID(patient);
-        return LabelFactory.create(idLabel);
+        String idLabeltext = "ID: " + getID(patient);
+        Label idLabel = LabelFactory.create();
+        idLabel.setText(idLabeltext);
+        return idLabel;
     }
 
     /**

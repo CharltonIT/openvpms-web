@@ -155,9 +155,6 @@ public class CustomerSummary extends PartySummary {
         }  
         AlertSummary alerts = getAlertSummary(party);
         if (alerts != null) {
-            Label alertTitle = create("alerts.title");
-            Grid AlertGrid = GridFactory.create(2,alertTitle);
-            column.add(AlertGrid);
             column.add(ColumnFactory.create("Inset.Small", alerts.getComponent()));
         }
         Column result = ColumnFactory.create("PartySummary", column);
