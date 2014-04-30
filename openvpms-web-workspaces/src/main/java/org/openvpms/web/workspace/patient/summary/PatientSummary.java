@@ -32,6 +32,7 @@ import org.openvpms.component.system.common.query.NodeSortConstraint;
 import org.openvpms.component.system.common.query.ShortNameConstraint;
 import org.openvpms.component.system.common.query.SortConstraint;
 import org.openvpms.web.component.app.Context;
+import org.openvpms.web.component.im.layout.LayoutContext;
 import org.openvpms.web.component.im.layout.DefaultLayoutContext;
 import org.openvpms.web.component.im.layout.LayoutContext;
 import org.openvpms.web.component.im.query.ActResultSet;
@@ -42,6 +43,7 @@ import org.openvpms.web.component.im.query.ResultSetIterator;
 import org.openvpms.web.component.im.table.PagedIMTable;
 import org.openvpms.web.component.im.table.act.AbstractActTableModel;
 import org.openvpms.web.component.im.view.IMObjectReferenceViewer;
+import org.openvpms.web.component.im.view.IMObjectViewer;
 import org.openvpms.web.component.im.view.TableComponentFactory;
 import org.openvpms.web.echo.dialog.PopupDialog;
 import org.openvpms.web.echo.event.ActionListener;
@@ -62,6 +64,7 @@ import java.util.Date;
 import java.util.List;
 
 import static org.openvpms.archetype.rules.patient.PatientArchetypes.PATIENT_PARTICIPATION;
+import static org.openvpms.web.echo.dialog.PopupDialog.OK;
 
 /**
  * Renders Patient Summary Information.
@@ -317,10 +320,9 @@ public class PatientSummary extends PartySummary {
     protected Component getReferralPractice(Party referralVet) {
         SupplierRules supplierrules = new SupplierRules(ServiceHelper.getArchetypeService());
         Party referralPractice = supplierrules.getReferralVetPractice(referralVet, new Date());
-        IMObjectReferenceViewer referralPracticeName = new IMObjectReferenceViewer(referralPractice.getObjectReference(), referralPractice.getName(), true,
-                getContext());
-        referralPracticeName.setStyleName("hyperlink-bold");
-        return referralPracticeName.getComponent();
+        Component referralPracticeName;
+        referralPracticeName = ButtonFactory.create(referralPractice.getName(),"hyperlink-bold", null);
+        return referralPracticeName;
     }
 
     /**
@@ -401,7 +403,10 @@ public class PatientSummary extends PartySummary {
         table.getTable().setDefaultRenderer(Object.class, new ReminderTableCellRenderer());
         new ViewerDialog(Messages.get("patient.summary.reminders"), "PatientSummary.ReminderDialog", table);
     }
-
+    private void onShowReferralVet(Party patient) {
+        IMObjectViewer view = new IMObjectViewer(patient,createLayoutContext(getContext(),getHelpContext()));
+        new ObjectDialog(Messages.get("patient.referralvet"),"PatientSummary.ReferralDialog",view);
+    }
     /**
      * Returns the species for a patient.
      *
@@ -498,6 +503,16 @@ public class PatientSummary extends PartySummary {
             setModal(true);
             getLayout().add(ColumnFactory.create("Inset", table));
             show();
+        }
+
+    }
+    private static class ObjectDialog extends PopupDialog {
+        
+      public ObjectDialog(String title, String style, IMObjectViewer objectview) {
+          super(title,style, OK);
+          setModal(true);
+          getLayout().add(objectview.getComponent());
+          show();
         }
     }
 
