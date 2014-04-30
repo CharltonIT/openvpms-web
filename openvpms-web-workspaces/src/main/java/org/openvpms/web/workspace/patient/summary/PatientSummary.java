@@ -125,6 +125,7 @@ public class PatientSummary extends PartySummary {
 
         return ColumnFactory.create("PartySummary", column);
     }
+
     /**
      * @param patient
      * @return
@@ -162,8 +163,9 @@ public class PatientSummary extends PartySummary {
         patientName.setStyleName("hyperlink-bold");
         return patientName.getComponent();
     }
+
     /**
-     * @param patient 
+     * @param patient
      * @return
      */
     protected Component getPatientId(Party patient) {
@@ -320,10 +322,19 @@ public class PatientSummary extends PartySummary {
      */
     protected Component getReferralPractice(Party referralVet) {
         SupplierRules supplierrules = new SupplierRules(ServiceHelper.getArchetypeService());
-        Party referralPractice = supplierrules.getReferralVetPractice(referralVet, new Date());
-        Component referralPracticeName;
-        referralPracticeName = ButtonFactory.create(referralPractice.getName(),"hyperlink-bold", null);
-        return referralPracticeName;
+        final Party referralPractice = supplierrules.getReferralVetPractice(referralVet, new Date());
+        if (referralPractice != null) {
+            Component referralPracticeName;
+            referralPracticeName = ButtonFactory.create(referralPractice.getName(), "hyperlink-bold", new ActionListener(){
+              public void onAction(ActionEvent event) {
+                    onShowReferralVet(referralPractice);
+                } 
+                 
+            });
+            return referralPracticeName;
+        } else {
+            return null;
+        }
     }
 
     /**
@@ -404,10 +415,12 @@ public class PatientSummary extends PartySummary {
         table.getTable().setDefaultRenderer(Object.class, new ReminderTableCellRenderer());
         new ViewerDialog(Messages.get("patient.summary.reminders"), "PatientSummary.ReminderDialog", table);
     }
-    private void onShowReferralVet(Party patient) {
-        IMObjectViewer view = new IMObjectViewer(patient,createLayoutContext(getContext(),getHelpContext()));
-        new ObjectDialog(Messages.get("patient.referralvet"),"PatientSummary.ReferralDialog",view);
+
+    private void onShowReferralVet(Party vet) {
+        IMObjectViewer view = new IMObjectViewer(vet, createLayoutContext(getContext(), getHelpContext()));
+        new ObjectDialog(Messages.get("patient.referralvet"), "PatientSummary.ReferralDialog", view);
     }
+
     /**
      * Returns the species for a patient.
      *
@@ -507,13 +520,26 @@ public class PatientSummary extends PartySummary {
         }
 
     }
+
+    /**
+     * Displays a object view in a pop up window
+     */
     private static class ObjectDialog extends PopupDialog {
-        
-      public ObjectDialog(String title, String style, IMObjectViewer objectview) {
-          super(title,style, OK);
-          setModal(true);
-          getLayout().add(objectview.getComponent());
-          show();
+
+        /**
+         * Contructs a {@code ObjectDialog}
+         *
+         * @param title string The dialog title
+         * @param style string the window style
+         * @param objectview Objectviewer object that contains the object to be
+         * displayed
+         */
+        public ObjectDialog(String title, String style, IMObjectViewer objectview) {
+            super(title, style, OK);
+            setModal(true);
+            this.
+            getLayout().add(objectview.getComponent());
+            show();
         }
     }
 

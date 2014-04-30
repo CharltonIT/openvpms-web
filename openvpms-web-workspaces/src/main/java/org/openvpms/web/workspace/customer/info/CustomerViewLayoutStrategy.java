@@ -94,10 +94,12 @@ public class CustomerViewLayoutStrategy extends AbstractLayoutStrategy {
                 onAppointmentSelected(object, subContext);
             }
 
+            @Override
             public void query() {
                 // no-op
             }
 
+            @Override
             public void browsed(Act object) {
                 // no-op
             }
