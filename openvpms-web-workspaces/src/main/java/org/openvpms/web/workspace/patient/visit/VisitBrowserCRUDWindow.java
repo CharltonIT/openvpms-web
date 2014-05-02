@@ -13,6 +13,7 @@
  *
  * Copyright 2014 (C) OpenVPMS Ltd. All Rights Reserved.
  */
+
 package org.openvpms.web.workspace.patient.visit;
 
 import org.openvpms.component.business.domain.im.act.Act;
@@ -20,6 +21,7 @@ import org.openvpms.web.component.app.Context;
 import org.openvpms.web.component.im.layout.DefaultLayoutContext;
 import org.openvpms.web.echo.help.HelpContext;
 import org.openvpms.web.workspace.customer.CustomerMailContext;
+import org.openvpms.web.workspace.patient.history.AbstractPatientHistoryCRUDWindow;
 import org.openvpms.web.workspace.patient.history.PatientHistoryBrowser;
 import org.openvpms.web.workspace.patient.history.PatientHistoryCRUDWindow;
 import org.openvpms.web.workspace.patient.history.PatientHistoryQuery;
@@ -71,7 +73,7 @@ public class VisitBrowserCRUDWindow extends BrowserCRUDWindow<Act> {
         PatientHistoryCRUDWindow window = createWindow(context);
         window.setMailContext(new CustomerMailContext(context, help));
         window.setQuery(query);
-        window.setEvent(browser.getEvent());
+        window.setEvent(browser.getSelectedParent());
         setWindow(window);
     }
 
@@ -83,7 +85,7 @@ public class VisitBrowserCRUDWindow extends BrowserCRUDWindow<Act> {
     @Override
     public void setSelected(Act object) {
         super.setSelected(object);
-        getWindow().setEvent(getBrowser().getEvent());
+        getWindow().setEvent(getBrowser().getSelectedParent());
     }
 
     /**
@@ -92,8 +94,8 @@ public class VisitBrowserCRUDWindow extends BrowserCRUDWindow<Act> {
      * @return the window
      */
     @Override
-    public PatientHistoryCRUDWindow getWindow() {
-        return (PatientHistoryCRUDWindow) super.getWindow();
+    public AbstractPatientHistoryCRUDWindow getWindow() {
+        return (AbstractPatientHistoryCRUDWindow) super.getWindow();
     }
 
     /**
@@ -124,8 +126,8 @@ public class VisitBrowserCRUDWindow extends BrowserCRUDWindow<Act> {
     @Override
     protected void onSelected(Act object) {
         PatientHistoryBrowser browser = getBrowser();
-        PatientHistoryCRUDWindow window = getWindow();
-        window.setEvent(browser.getEvent(object));
+        AbstractPatientHistoryCRUDWindow window = getWindow();
+        window.setEvent(browser.getParent(object));
         super.onSelected(object);
     }
 }

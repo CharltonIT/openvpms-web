@@ -14,52 +14,55 @@
  * Copyright 2014 (C) OpenVPMS Ltd. All Rights Reserved.
  */
 
-package org.openvpms.web.workspace.patient.history;
+package org.openvpms.web.workspace.patient.problem;
 
 import nextapp.echo2.app.table.TableCellRenderer;
 import org.openvpms.component.business.domain.im.act.Act;
+import org.openvpms.web.component.im.act.PagedActHierarchyTableModel;
 import org.openvpms.web.component.im.layout.LayoutContext;
 import org.openvpms.web.component.im.table.IMObjectTableModel;
 import org.openvpms.web.component.im.table.IMObjectTableModelFactory;
 import org.openvpms.web.component.im.table.IMTableModel;
 import org.openvpms.web.component.im.table.PagedIMTable;
+import org.openvpms.web.workspace.patient.history.AbstractPatientHistoryBrowser;
+import org.openvpms.web.workspace.patient.history.PatientHistoryTableCellRenderer;
 
 
 /**
- * Patient history record browser.
+ * Patient problem record browser.
  *
  * @author Tim Anderson
  */
-public class PatientHistoryBrowser extends AbstractPatientHistoryBrowser {
+public class ProblemBrowser extends AbstractPatientHistoryBrowser {
 
     /**
      * The table model that wraps the underlying model, to filter acts.
      */
-    private PagedPatientHistoryTableModel pagedModel;
+    private PagedActHierarchyTableModel<Act> pagedModel;
 
     /**
      * The cell renderer.
      */
-    private static final TableCellRenderer RENDERER = new PatientHistoryTableCellRenderer("MedicalRecordSummary");
+    private static final TableCellRenderer RENDERER = new PatientHistoryTableCellRenderer("ProblemSummary");
 
     /**
-     * Constructs a {@link PatientHistoryBrowser} that queries IMObjects using the specified query.
+     * Constructs a {@link ProblemBrowser} that queries IMObjects using the specified query.
      *
      * @param query   the query
      * @param context the layout context
      */
-    public PatientHistoryBrowser(PatientHistoryQuery query, LayoutContext context) {
-        this(query, newTableModel(context), context);
+    public ProblemBrowser(ProblemQuery query, LayoutContext context) {
+        this(query, (ProblemTableModel) IMObjectTableModelFactory.create(ProblemTableModel.class, context), context);
     }
 
     /**
-     * Constructs a {@link PatientHistoryBrowser} that queries IMObjects using the specified query.
+     * Constructs a {@link ProblemBrowser} that queries IMObjects using the specified query.
      *
      * @param query   the query
      * @param model   the table model
      * @param context the layout context
      */
-    public PatientHistoryBrowser(PatientHistoryQuery query, PatientHistoryTableModel model, LayoutContext context) {
+    public ProblemBrowser(ProblemQuery query, ProblemTableModel model, LayoutContext context) {
         super(query, model, context);
     }
 
@@ -70,21 +73,10 @@ public class PatientHistoryBrowser extends AbstractPatientHistoryBrowser {
     public void query() {
         if (pagedModel != null) {
             // ensure the table model has the selected child act short names prior to performing the query
-            PatientHistoryQuery query = getQuery();
+            ProblemQuery query = (ProblemQuery) getQuery();
             pagedModel.setShortNames(query.getActItemShortNames());
-            pagedModel.setSortAscending(query.isSortAscending());
         }
         super.query();
-    }
-
-    /**
-     * Returns the query.
-     *
-     * @return the query
-     */
-    @Override
-    public PatientHistoryQuery getQuery() {
-        return (PatientHistoryQuery) super.getQuery();
     }
 
     /**
@@ -95,10 +87,9 @@ public class PatientHistoryBrowser extends AbstractPatientHistoryBrowser {
      */
     @Override
     protected PagedIMTable<Act> createTable(IMTableModel<Act> model) {
-        PatientHistoryQuery query = getQuery();
-        pagedModel = new PagedPatientHistoryTableModel((IMObjectTableModel<Act>) model, getContext().getContext(),
-                                                       query.getActItemShortNames());
-        pagedModel.setSortAscending(query.isSortAscending());
+        ProblemQuery query = (ProblemQuery) getQuery();
+        pagedModel = new PagedActHierarchyTableModel<Act>((IMObjectTableModel<Act>) model, getContext().getContext(),
+                                                          query.getActItemShortNames());
         PagedIMTable<Act> result = super.createTable(pagedModel);
         initTable(result);
         return result;
@@ -114,16 +105,4 @@ public class PatientHistoryBrowser extends AbstractPatientHistoryBrowser {
         super.initTable(table);
         table.getTable().setDefaultRenderer(Object.class, RENDERER);
     }
-
-    /**
-     * Creates a new table model.
-     *
-     * @param context the layout context
-     * @return a new table model
-     */
-    private static PatientHistoryTableModel newTableModel(LayoutContext context) {
-        IMObjectTableModel model = IMObjectTableModelFactory.create(PatientHistoryTableModel.class, context);
-        return (PatientHistoryTableModel) model;
-    }
-
 }
