@@ -206,7 +206,7 @@ public class CustomerSummary extends PartySummary {
         query.setStatus(ActStatus.IN_PROGRESS);
         return query.query();
     }
-
+    
     /**
      * Returns a button to launch an {@link MailDialog} for a customer.
      *

@@ -302,7 +302,7 @@ public class PatientSummary extends PartySummary {
      */
     protected Grid addRefferalVet(Party patient) {
         Grid grid = GridFactory.create(1);
-        Party referralVetparty = rules.gerReferralVet(patient);
+        Party referralVetparty = rules.getReferralVet(patient);
         if (referralVetparty != null) {
             Label referralVetTitle = LabelFactory.create("patient.referralvet");
             Label referralVet = LabelFactory.create();
