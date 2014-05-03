@@ -15,12 +15,16 @@
  */
 package org.openvpms.web.workspace.patient.summary;
 
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 import nextapp.echo2.app.Component;
 import nextapp.echo2.app.Grid;
 import nextapp.echo2.app.Label;
 import nextapp.echo2.app.event.ActionEvent;
 import org.openvpms.archetype.rules.act.ActStatus;
 import org.openvpms.archetype.rules.patient.PatientArchetypes;
+import static org.openvpms.archetype.rules.patient.PatientArchetypes.PATIENT_PARTICIPATION;
 import org.openvpms.archetype.rules.patient.PatientRules;
 import org.openvpms.archetype.rules.patient.reminder.ReminderArchetypes;
 import org.openvpms.archetype.rules.patient.reminder.ReminderRules;
@@ -32,7 +36,6 @@ import org.openvpms.component.system.common.query.NodeSortConstraint;
 import org.openvpms.component.system.common.query.ShortNameConstraint;
 import org.openvpms.component.system.common.query.SortConstraint;
 import org.openvpms.web.component.app.Context;
-import org.openvpms.web.component.im.layout.LayoutContext;
 import org.openvpms.web.component.im.layout.DefaultLayoutContext;
 import org.openvpms.web.component.im.layout.LayoutContext;
 import org.openvpms.web.component.im.query.ActResultSet;
@@ -46,6 +49,7 @@ import org.openvpms.web.component.im.view.IMObjectReferenceViewer;
 import org.openvpms.web.component.im.view.IMObjectViewer;
 import org.openvpms.web.component.im.view.TableComponentFactory;
 import org.openvpms.web.echo.dialog.PopupDialog;
+import static org.openvpms.web.echo.dialog.PopupDialog.OK;
 import org.openvpms.web.echo.event.ActionListener;
 import org.openvpms.web.echo.factory.ButtonFactory;
 import org.openvpms.web.echo.factory.ColumnFactory;
@@ -57,14 +61,8 @@ import org.openvpms.web.resource.i18n.Messages;
 import org.openvpms.web.system.ServiceHelper;
 import org.openvpms.web.workspace.alert.Alert;
 import org.openvpms.web.workspace.alert.AlertSummary;
+import org.openvpms.web.workspace.customer.estimate.CustomerEstimateQuery;
 import org.openvpms.web.workspace.summary.PartySummary;
-
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-
-import static org.openvpms.archetype.rules.patient.PatientArchetypes.PATIENT_PARTICIPATION;
-import static org.openvpms.web.echo.dialog.PopupDialog.OK;
 
 /**
  * Renders Patient Summary Information.
@@ -122,7 +120,9 @@ public class PatientSummary extends PartySummary {
         if (alerts != null) {
             column.add(ColumnFactory.create("Inset.Small", alerts.getComponent()));
         }
-
+        if(hasEstimates(patient)){
+            column.add(ButtonFactory.create("patient.estimates"));
+        }
         return ColumnFactory.create("PartySummary", column);
     }
 
@@ -363,6 +363,12 @@ public class PatientSummary extends PartySummary {
         // constrain to alerts that intersect today
 
         return new ActResultSet<Act>(archetypes, participants, dateRange, statuses, false, null, pageSize, null);
+    }
+    
+    protected ResultSet<Act> createEstimateResultSet(Party patient, int pageSize) {
+        Party customer = rules.getOwner(patient);
+        CustomerEstimateQuery query = new CustomerEstimateQuery(customer);
+        return query.query();
     }
 
     /**
