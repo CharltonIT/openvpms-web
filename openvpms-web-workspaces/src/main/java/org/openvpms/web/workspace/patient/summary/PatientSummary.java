@@ -548,7 +548,12 @@ public class PatientSummary extends PartySummary {
             show();
         }
     }
-
+    protected static class EstimateTableModel extends AbstractActTableModel {
+        
+        public EstimateTableModel(Context context, HelpContext help) {
+            super(new String[]{EstimateArchetypes.ESTIMATE}, createLayoutContext(context, help));
+        }
+    }
     private static class ReminderTableModel extends AbstractActTableModel {
 
         /**

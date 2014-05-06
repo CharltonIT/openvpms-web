@@ -156,7 +156,7 @@ public class CustomerSummary extends PartySummary {
             column.add(ColumnFactory.create("Inset.Small", alerts.getComponent()));
         }
         if(hasEstimates(party)) {
-           column.add(LabelFactory.create("customer.estimates"));
+           column.add(ButtonFactory.create("customer.estimates"));
         }
         Column result = ColumnFactory.create("PartySummary", column);
         if (SMSHelper.isSMSEnabled(practice)) {
