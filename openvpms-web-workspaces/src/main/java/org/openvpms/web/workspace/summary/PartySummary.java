@@ -169,7 +169,7 @@ public abstract class PartySummary {
         ResultSetIterator<Act> iterator = new ResultSetIterator<Act>(set);
         while (iterator.hasNext()) {
             Act act = iterator.next();
-            Date endTime = act.getActivityEndTime();
+        Date endTime = act.getActivityEndTime();
             if(endTime == null || endTime.after(new Date())) {
                 return true;                   
                 }

@@ -209,9 +209,9 @@ public class CustomerSummary extends PartySummary {
         return query.query();
     }
     
-    protected ResultSet<Act> createEstimateResultSet(Party party, int pageSize) {
+    protected  createEstimateResultSet(Party party, int pageSize) {
         CustomerEstimateQuery query = new CustomerEstimateQuery(party);
-        return query.query();
+        return query;
     }
     /**
      * Returns a button to launch an {@link MailDialog} for a customer.
