@@ -158,30 +158,4 @@ public abstract class PartySummary {
      * @author benjamincharlton
      */
     protected abstract ResultSet<Act> createAlertsResultSet(Party party, int pageSize);
-    /**
-     * Returns {@code true} if the party has a valid Estimate
-     * @param party
-     * @return boolean
-     * @author benjamincharlton
-     */
-    protected boolean hasEstimates(Party party){
-        ResultSet<Act> set = createEstimateResultSet(party,20);
-        ResultSetIterator<Act> iterator = new ResultSetIterator<Act>(set);
-        while (iterator.hasNext()) {
-            Act act = iterator.next();
-        Date endTime = act.getActivityEndTime();
-            if(endTime == null || endTime.after(new Date())) {
-                return true;                   
-                }
-            }
-        return false;
-        }
-    /**
-     * Returns a Set of Estimates for a party
-     * 
-     * @param party the party
-     * @param pageSize the no. of estimates to return per page.
-     * @return the set of estimates for the party.
-     */
-    protected abstract ResultSet<Act> createEstimateResultSet(Party party, int pageSize);
 }

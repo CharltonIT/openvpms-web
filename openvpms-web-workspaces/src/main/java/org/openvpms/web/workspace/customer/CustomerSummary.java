@@ -208,10 +208,9 @@ public class CustomerSummary extends PartySummary {
         query.setStatus(ActStatus.IN_PROGRESS);
         return query.query();
     }
-    
-    protected  createEstimateResultSet(Party party, int pageSize) {
-        CustomerEstimateQuery query = new CustomerEstimateQuery(party);
-        return query;
+    private Boolean hasEstimates(Party customer) {
+        CustomerEstimateQuery query = new CustomerEstimateQuery(customer);
+        return query.hasEstimates();
     }
     /**
      * Returns a button to launch an {@link MailDialog} for a customer.

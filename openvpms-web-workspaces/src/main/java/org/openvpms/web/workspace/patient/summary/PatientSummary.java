@@ -366,12 +366,6 @@ public class PatientSummary extends PartySummary {
         return new ActResultSet<Act>(archetypes, participants, dateRange, statuses, false, null, pageSize, null);
     }
     
-    protected ResultSet<Act> createEstimateResultSet(Party patient, int pageSize) {
-        Party customer = rules.getOwner(patient);
-        CustomerEstimateQuery query = new CustomerEstimateQuery(customer);
-        return query.query();
-    }
-
     /**
      * Returns outstanding acts for a patient.
      *
@@ -505,6 +499,11 @@ public class PatientSummary extends PartySummary {
         TableComponentFactory factory = new TableComponentFactory(result);
         result.setComponentFactory(factory);
         return result;
+    }
+    private Boolean hasEstimates(Party patient) {
+        Party customer = rules.getOwner(patient);
+        CustomerEstimateQuery query = new CustomerEstimateQuery(customer);
+        return query.patientHasEstimates(patient);
     }
 
     /**
