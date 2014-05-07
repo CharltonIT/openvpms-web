@@ -191,6 +191,13 @@
         </properties>
     </style>
 
+    <style name="PatientSummary.ReferralDialog" base-name="PopupWindow"
+           type="nextapp.echo2.app.WindowPane">
+        <properties>
+            <property name="width" value="${dialog.medium.width}"/>
+            <property name="height" value="${dialog.medium.height}"/>
+        </properties>
+    </style>
     <style name="PatientSummary.Reminder.OVERDUE"
            type="nextapp.echo2.app.Component">
         <properties>
@@ -419,7 +426,20 @@
             <property name="height" value="${dialog.large.height}"/>
         </properties>
     </style>
-
+    <style name="EstimatesViewer" base-name="PopupWindow"
+           type="nextapp.echo2.app.WindowPane">
+        <properties>
+            <property name="width" value="${dialog.large.width}"/>
+            <property name="height" value="${dialog.large.height}"/>
+        </properties>
+    </style>
+    <style name="EstimatesTableViewer" base-name="default" type="org.openvpms.web.echo.table.KeyTable">
+        <properties>
+            <!-- make the blur background the same as the selection background to avoid white-foreground text
+                 becoming hard to read -->
+            <property name="selectionBlurBackground" value="${theme.selection.colour}"/>
+        </properties>
+    </style>
     <style name="AlertsViewerTable" base-name="default" type="org.openvpms.web.echo.table.KeyTable">
         <properties>
             <!-- make the blur background the same as the selection background to avoid white-foreground text

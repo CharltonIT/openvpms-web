@@ -155,9 +155,6 @@ public class CustomerSummary extends PartySummary {
         if (alerts != null) {
             column.add(ColumnFactory.create("Inset.Small", alerts.getComponent()));
         }
-        if(hasEstimates(party)) {
-           column.add(ButtonFactory.create("customer.estimates"));
-        }
         Column result = ColumnFactory.create("PartySummary", column);
         if (SMSHelper.isSMSEnabled(practice)) {
             final List<Contact> contacts = ContactHelper.getSMSContacts(party);
@@ -207,10 +204,6 @@ public class CustomerSummary extends PartySummary {
         CustomerAlertQuery query = new CustomerAlertQuery(party, true);
         query.setStatus(ActStatus.IN_PROGRESS);
         return query.query();
-    }
-    private Boolean hasEstimates(Party customer) {
-        CustomerEstimateQuery query = new CustomerEstimateQuery(customer);
-        return query.hasEstimates();
     }
     /**
      * Returns a button to launch an {@link MailDialog} for a customer.

@@ -23,11 +23,11 @@ import nextapp.echo2.app.Grid;
 import nextapp.echo2.app.Label;
 import nextapp.echo2.app.event.ActionEvent;
 import org.openvpms.archetype.rules.act.ActStatus;
+import org.openvpms.archetype.rules.finance.estimate.EstimateArchetypes;
 import org.openvpms.archetype.rules.patient.PatientArchetypes;
 import static org.openvpms.archetype.rules.patient.PatientArchetypes.PATIENT_PARTICIPATION;
 import org.openvpms.archetype.rules.patient.PatientRules;
 import org.openvpms.archetype.rules.patient.reminder.ReminderArchetypes;
-import org.openvpms.archetype.rules.finance.estimate.EstimateArchetypes;
 import org.openvpms.archetype.rules.patient.reminder.ReminderRules;
 import org.openvpms.archetype.rules.supplier.SupplierRules;
 import org.openvpms.component.business.domain.im.act.Act;
@@ -63,6 +63,7 @@ import org.openvpms.web.system.ServiceHelper;
 import org.openvpms.web.workspace.alert.Alert;
 import org.openvpms.web.workspace.alert.AlertSummary;
 import org.openvpms.web.workspace.customer.estimate.CustomerEstimateQuery;
+import org.openvpms.web.workspace.customer.estimate.EstimateViewer;
 import org.openvpms.web.workspace.summary.PartySummary;
 
 /**
@@ -120,9 +121,6 @@ public class PatientSummary extends PartySummary {
         AlertSummary alerts = getAlertSummary(patient);
         if (alerts != null) {
             column.add(ColumnFactory.create("Inset.Small", alerts.getComponent()));
-        }
-        if(hasEstimates(patient)){
-            column.add(ButtonFactory.create("patient.estimates"));
         }
         return ColumnFactory.create("PartySummary", column);
     }
@@ -219,6 +217,7 @@ public class PatientSummary extends PartySummary {
         Grid grid = GridFactory.create(2);
 
         addReminders(patient, grid);
+        addEstimates(patient, grid);
         addAge(patient, grid);
         addWeight(patient, grid);
         addMicrochip(patient, grid);
@@ -248,6 +247,24 @@ public class PatientSummary extends PartySummary {
         }
         grid.add(reminderTitle);
         grid.add(reminders);
+    }
+    protected void addEstimates(final Party patient, Grid grid) {
+        if(hasEstimates(patient)) {
+        Component row = grid.getComponent(1);
+        grid.remove(1);
+        Grid newgrid = GridFactory.create(2);
+            String style = "estimate.available";
+            Component estimates = ButtonFactory.create(null,style, new ActionListener() {
+                public void onAction(ActionEvent event) {
+                    onShowEstimates(patient);
+                } 
+            });
+            newgrid.add(row);
+            newgrid.add(estimates);
+            Component newrow = RowFactory.create(newgrid);
+            grid.add(newrow);
+         
+        }
     }
 
     /**
@@ -310,7 +327,10 @@ public class PatientSummary extends PartySummary {
             referralVet.setText(referralVetparty.getName());
             grid.add(referralVetTitle);
             grid.add(referralVet);
-            grid.add(getReferralPractice(referralVetparty));
+            Component referralPractice = getReferralPractice(referralVetparty);
+            if (referralPractice != null) {
+            grid.add(referralPractice);
+            }
         }
         return grid;
     }
@@ -416,7 +436,14 @@ public class PatientSummary extends PartySummary {
         table.getTable().setDefaultRenderer(Object.class, new ReminderTableCellRenderer());
         new ViewerDialog(Messages.get("patient.summary.reminders"), "PatientSummary.ReminderDialog", table);
     }
-
+    
+    private void onShowEstimates(Party patient){
+         Party customer = rules.getOwner(patient);
+         CustomerEstimateQuery query = new CustomerEstimateQuery(customer);
+         List<Act> estimates = query.resultList(patient);
+         EstimateViewer viewer = new EstimateViewer(estimates, getContext(), getHelpContext());
+         viewer.show();
+                 }
     private void onShowReferralVet(Party vet) {
         IMObjectViewer view = new IMObjectViewer(vet, createLayoutContext(getContext(), getHelpContext()));
         new ObjectDialog(Messages.get("patient.referralvet"), "PatientSummary.ReferralDialog", view);
@@ -486,8 +513,8 @@ public class PatientSummary extends PartySummary {
         return new ActResultSet<Act>(archetypes, participants, null,
                 statuses, false, null, 10, sort);
     }
-
-    /**
+    
+     /**
      * Helper to create a layout context where hyperlinks are disabled.
      *
      * @param help the help context
@@ -523,6 +550,11 @@ public class PatientSummary extends PartySummary {
             setModal(true);
             getLayout().add(ColumnFactory.create("Inset", table));
             show();
+        }
+        public ViewerDialog(String title, String style) {
+            super(title, style, OK);
+            setModal(true);
+             
         }
 
     }
