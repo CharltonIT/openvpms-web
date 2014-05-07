@@ -16,6 +16,9 @@
 
 package org.openvpms.web.workspace.customer;
 
+import java.math.BigDecimal;
+import java.util.Date;
+import java.util.List;
 import nextapp.echo2.app.Button;
 import nextapp.echo2.app.Column;
 import nextapp.echo2.app.Component;
@@ -51,13 +54,9 @@ import org.openvpms.web.echo.help.HelpContext;
 import org.openvpms.web.system.ServiceHelper;
 import org.openvpms.web.workspace.alert.Alert;
 import org.openvpms.web.workspace.alert.AlertSummary;
+import org.openvpms.web.workspace.customer.estimate.CustomerEstimateQuery;
 import org.openvpms.web.workspace.customer.note.CustomerAlertQuery;
 import org.openvpms.web.workspace.summary.PartySummary;
-
-
-import java.math.BigDecimal;
-import java.util.Date;
-import java.util.List;
 
 
 /**
@@ -193,7 +192,7 @@ public class CustomerSummary extends PartySummary {
         }
         return result;
     }
-
+    
     /**
      * Returns outstanding alerts for a party.
      *
@@ -206,7 +205,6 @@ public class CustomerSummary extends PartySummary {
         query.setStatus(ActStatus.IN_PROGRESS);
         return query.query();
     }
-    
     /**
      * Returns a button to launch an {@link MailDialog} for a customer.
      *
