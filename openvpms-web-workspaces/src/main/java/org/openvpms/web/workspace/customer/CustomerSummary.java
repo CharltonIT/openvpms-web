@@ -76,7 +76,7 @@ public class CustomerSummary extends PartySummary {
      */
     private CustomerAccountRules accountRules;
     private Party practice;
-    private boolean showAccountSummary;
+    private boolean hideAccountSummary;
 
     /**
      * Constructs a {@code CustomerSummary}.
@@ -118,12 +118,12 @@ public class CustomerSummary extends PartySummary {
         }
         final Context context = getContext();
         Party practice=context.getPractice();
-        showAccountSummary = true;
+        hideAccountSummary = true;
         if (practice !=null){
             IMObjectBean bean = new IMObjectBean(practice);
-            showAccountSummary = bean.getBoolean("showCustomerBalanceWindow");
+            hideAccountSummary = bean.getBoolean("hideCustomerBalanceWindow");
         }
-        if (showAccountSummary){
+        if (!hideAccountSummary){
         Label balanceTitle = create("customer.account.balance");
         BigDecimal balance = accountRules.getBalance(party);
         Label balanceValue = create(balance);

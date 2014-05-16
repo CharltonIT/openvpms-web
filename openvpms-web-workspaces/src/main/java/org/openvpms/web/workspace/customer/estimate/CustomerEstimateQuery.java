@@ -1,7 +1,18 @@
 /*
- * To change this license header, choose License Headers in Project Properties.
- * To change this template file, choose Tools | Templates
- * and open the template in the editor.
+ * Version: 1.0
+ *
+ * The contents of this file are subject to the OpenVPMS License Version
+ * 1.0 (the 'License'); you may not use this file except in compliance with
+ * the License. You may obtain a copy of the License at
+ * http://www.openvpms.org/license/
+ *
+ * Software distributed under the License is distributed on an 'AS IS' basis,
+ * WITHOUT WARRANTY OF ANY KIND, either express or implied. See the License
+ * for the specific language governing rights and limitations under the
+ * License.
+ *
+ * Copyright 2014 (C) OpenVPMS Ltd. All Rights Reserved.
+ *
  */
 package org.openvpms.web.workspace.customer.estimate;
 
@@ -11,7 +22,6 @@ import java.util.Iterator;
 import java.util.List;
 import org.openvpms.archetype.rules.act.EstimateActStatus;
 import static org.openvpms.archetype.rules.finance.estimate.EstimateArchetypes.ESTIMATE;
-import org.openvpms.archetype.rules.finance.estimate.EstimateRules;
 import org.openvpms.component.business.domain.im.act.Act;
 import org.openvpms.component.business.domain.im.common.IMObject;
 import org.openvpms.component.business.domain.im.party.Party;
@@ -34,18 +44,15 @@ import org.openvpms.web.system.ServiceHelper;
  */
 public class CustomerEstimateQuery extends ArchetypeQuery {
 
+    private final IArchetypeService service;
+
     /**
-     * Constructs and Estimate Query
+     * Constructs the Estimate QUERY
      *
      * @param customer
      */
-    private final IArchetypeService service;
-
-    private final EstimateRules rules;
-
     public CustomerEstimateQuery(Party customer) {
         super(ESTIMATE);
-        rules = ServiceHelper.getBean(EstimateRules.class);
         service = ServiceHelper.getArchetypeService();
         this.add(join("customer").add(eq("entity", customer.getObjectReference())));
         this.add(ne("status", EstimateActStatus.CANCELLED));
@@ -53,50 +60,70 @@ public class CustomerEstimateQuery extends ArchetypeQuery {
         this.add(or(isNull("endTime"), gt("endTime", new Date())));
     }
 
+    /**
+     * Returns a Paged set of IMObjects as a result.
+     * @return {@code IPage<IMObject>}
+     */
     public IPage query() {
         IPage<IMObject> result = service.get(this);
         return result;
     }
-
+    /**
+     * Returns an iterable ret of Acts
+     * @return {@code IterableObject<Act>}
+     */
     private Iterable<Act> objectList() {
         return new IterableIMObjectQuery<Act>(service, this);
     }
 
+    /**
+     * Constructs and List of estimate Acts returned by the query
+     * @return (@code ArrayList<Act>}
+     */
     public List<Act> resultList() {
         return this.resultList(null);
     }
 
+    /**
+     * Constructs and List of estimate Acts returned by the query
+     * @param patient optional can be null if so returns customer estimates
+     * @return (@code ArrayList<Act>} of Estimates
+     */
     public List<Act> resultList(Party patient) {
+        if (patient != null) {
+            this.add(join("items").add(join("target").add(join("patient").add(eq("entity", patient.getObjectReference())))));
+        }
         Iterator<Act> iterator = this.objectList().iterator();
         List<Act> list = new ArrayList<Act>();
         while (iterator.hasNext()) {
-            if (patient != null) {
-                Act act = iterator.next();
-                if (rules.isPatientEstimate(act, patient)) {
-                    list.add(act);
-                }
-            } else {
-                list.add(iterator.next());
-            }
+            list.add(iterator.next());
         }
-        
         return list;
     }
 
-    public Boolean hasEstimates() {
-        this.setCountResults(true);
-        return this.query().getTotalResults() != 0;
+    
+
+
+/**
+ * Returns if a customer has Estimates
+ *
+ * @return {@code True} if estimates exist
+ */
+public Boolean hasEstimates() {
+        return hasEstimates(null);
     }
 
-    public Boolean patientHasEstimates(Party patient) {
-        Iterator<Act> iterator = this.objectList().iterator();
-        while (iterator.hasNext()) {
-            Boolean result = rules.isPatientEstimate(iterator.next(), patient);
-            if (result) {
-                return result;
-            }
+    /**
+     * Returns if a patient has estimates
+     * @param patient can be null if so returns the customer estimates.
+     * @return {@code True} if estimates exist for the patient.
+     */
+    public Boolean hasEstimates(Party patient) {
+        if (patient != null) {
+            this.add(join("items").add(join("target").add(join("patient").add(eq("entity", patient.getObjectReference())))));
         }
-        return false;
+        this.setCountResults(true);
+        return this.query().getTotalResults() != 0;
     }
 
 }

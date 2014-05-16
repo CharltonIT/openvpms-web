@@ -11,3 +11,4 @@
 /openvpms-web-resource/target
 /openvpms-web-app/openvpms-full.log
 /openvpms-web-app/openvpms.log
+nb-configuration.xml

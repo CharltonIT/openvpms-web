@@ -346,7 +346,8 @@ public class PatientSummary extends PartySummary {
         final Party referralPractice = supplierrules.getReferralVetPractice(referralVet, new Date());
         if (referralPractice != null) {
             Component referralPracticeName;
-            referralPracticeName = ButtonFactory.create(referralPractice.getName(), "hyperlink-bold", new ActionListener(){
+            String refpracticenametext = referralPractice.getName();
+            referralPracticeName = ButtonFactory.create(refpracticenametext, "hyperlink-bold", new ActionListener(){
               public void onAction(ActionEvent event) {
                     onShowReferralVet(referralPractice);
                 } 
@@ -530,7 +531,7 @@ public class PatientSummary extends PartySummary {
     private Boolean hasEstimates(Party patient) {
         Party customer = rules.getOwner(patient);
         CustomerEstimateQuery query = new CustomerEstimateQuery(customer);
-        return query.patientHasEstimates(patient);
+        return query.hasEstimates(patient);
     }
 
     /**
@@ -565,11 +566,11 @@ public class PatientSummary extends PartySummary {
     private static class ObjectDialog extends PopupDialog {
 
         /**
-         * Contructs a {@code ObjectDialog}
+         * Constructs a {@code ObjectDialog}
          *
          * @param title string The dialog title
          * @param style string the window style
-         * @param objectview Objectviewer object that contains the object to be
+         * @param objectview Object viewer that contains the object to be
          * displayed
          */
         public ObjectDialog(String title, String style, IMObjectViewer objectview) {
