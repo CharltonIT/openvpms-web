@@ -15,12 +15,17 @@
  */
 package org.openvpms.web.workspace.patient.summary;
 
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
 import nextapp.echo2.app.Component;
 import nextapp.echo2.app.Grid;
 import nextapp.echo2.app.Label;
 import nextapp.echo2.app.event.ActionEvent;
 import org.openvpms.archetype.rules.act.ActStatus;
+import org.openvpms.archetype.rules.finance.estimate.EstimateArchetypes;
 import org.openvpms.archetype.rules.patient.PatientArchetypes;
+import static org.openvpms.archetype.rules.patient.PatientArchetypes.PATIENT_PARTICIPATION;
 import org.openvpms.archetype.rules.patient.PatientRules;
 import org.openvpms.archetype.rules.patient.reminder.ReminderArchetypes;
 import org.openvpms.archetype.rules.patient.reminder.ReminderRules;
@@ -32,7 +37,6 @@ import org.openvpms.component.system.common.query.NodeSortConstraint;
 import org.openvpms.component.system.common.query.ShortNameConstraint;
 import org.openvpms.component.system.common.query.SortConstraint;
 import org.openvpms.web.component.app.Context;
-import org.openvpms.web.component.im.layout.LayoutContext;
 import org.openvpms.web.component.im.layout.DefaultLayoutContext;
 import org.openvpms.web.component.im.layout.LayoutContext;
 import org.openvpms.web.component.im.query.ActResultSet;
@@ -46,6 +50,7 @@ import org.openvpms.web.component.im.view.IMObjectReferenceViewer;
 import org.openvpms.web.component.im.view.IMObjectViewer;
 import org.openvpms.web.component.im.view.TableComponentFactory;
 import org.openvpms.web.echo.dialog.PopupDialog;
+import static org.openvpms.web.echo.dialog.PopupDialog.OK;
 import org.openvpms.web.echo.event.ActionListener;
 import org.openvpms.web.echo.factory.ButtonFactory;
 import org.openvpms.web.echo.factory.ColumnFactory;
@@ -57,14 +62,9 @@ import org.openvpms.web.resource.i18n.Messages;
 import org.openvpms.web.system.ServiceHelper;
 import org.openvpms.web.workspace.alert.Alert;
 import org.openvpms.web.workspace.alert.AlertSummary;
+import org.openvpms.web.workspace.customer.estimate.CustomerEstimateQuery;
+import org.openvpms.web.workspace.customer.estimate.EstimateViewer;
 import org.openvpms.web.workspace.summary.PartySummary;
-
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-
-import static org.openvpms.archetype.rules.patient.PatientArchetypes.PATIENT_PARTICIPATION;
-import static org.openvpms.web.echo.dialog.PopupDialog.OK;
 
 /**
  * Renders Patient Summary Information.
@@ -122,7 +122,6 @@ public class PatientSummary extends PartySummary {
         if (alerts != null) {
             column.add(ColumnFactory.create("Inset.Small", alerts.getComponent()));
         }
-
         return ColumnFactory.create("PartySummary", column);
     }
 
@@ -218,6 +217,7 @@ public class PatientSummary extends PartySummary {
         Grid grid = GridFactory.create(2);
 
         addReminders(patient, grid);
+        addEstimates(patient, grid);
         addAge(patient, grid);
         addWeight(patient, grid);
         addMicrochip(patient, grid);
@@ -247,6 +247,24 @@ public class PatientSummary extends PartySummary {
         }
         grid.add(reminderTitle);
         grid.add(reminders);
+    }
+    protected void addEstimates(final Party patient, Grid grid) {
+        if(hasEstimates(patient)) {
+        Component row = grid.getComponent(1);
+        grid.remove(1);
+        Grid newgrid = GridFactory.create(2);
+            String style = "estimate.available";
+            Component estimates = ButtonFactory.create(null,style, new ActionListener() {
+                public void onAction(ActionEvent event) {
+                    onShowEstimates(patient);
+                } 
+            });
+            newgrid.add(row);
+            newgrid.add(estimates);
+            Component newrow = RowFactory.create(newgrid);
+            grid.add(newrow);
+         
+        }
     }
 
     /**
@@ -309,7 +327,10 @@ public class PatientSummary extends PartySummary {
             referralVet.setText(referralVetparty.getName());
             grid.add(referralVetTitle);
             grid.add(referralVet);
-            grid.add(getReferralPractice(referralVetparty));
+            Component referralPractice = getReferralPractice(referralVetparty);
+            if (referralPractice != null) {
+            grid.add(referralPractice);
+            }
         }
         return grid;
     }
@@ -325,7 +346,8 @@ public class PatientSummary extends PartySummary {
         final Party referralPractice = supplierrules.getReferralVetPractice(referralVet, new Date());
         if (referralPractice != null) {
             Component referralPracticeName;
-            referralPracticeName = ButtonFactory.create(referralPractice.getName(), "hyperlink-bold", new ActionListener(){
+            String refpracticenametext = referralPractice.getName();
+            referralPracticeName = ButtonFactory.create(refpracticenametext, "hyperlink-bold", new ActionListener(){
               public void onAction(ActionEvent event) {
                     onShowReferralVet(referralPractice);
                 } 
@@ -364,7 +386,7 @@ public class PatientSummary extends PartySummary {
 
         return new ActResultSet<Act>(archetypes, participants, dateRange, statuses, false, null, pageSize, null);
     }
-
+    
     /**
      * Returns outstanding acts for a patient.
      *
@@ -415,7 +437,14 @@ public class PatientSummary extends PartySummary {
         table.getTable().setDefaultRenderer(Object.class, new ReminderTableCellRenderer());
         new ViewerDialog(Messages.get("patient.summary.reminders"), "PatientSummary.ReminderDialog", table);
     }
-
+    
+    private void onShowEstimates(Party patient){
+         Party customer = rules.getOwner(patient);
+         CustomerEstimateQuery query = new CustomerEstimateQuery(customer);
+         List<Act> estimates = query.resultList(patient);
+         EstimateViewer viewer = new EstimateViewer(estimates, getContext(), getHelpContext());
+         viewer.show();
+                 }
     private void onShowReferralVet(Party vet) {
         IMObjectViewer view = new IMObjectViewer(vet, createLayoutContext(getContext(), getHelpContext()));
         new ObjectDialog(Messages.get("patient.referralvet"), "PatientSummary.ReferralDialog", view);
@@ -485,8 +514,8 @@ public class PatientSummary extends PartySummary {
         return new ActResultSet<Act>(archetypes, participants, null,
                 statuses, false, null, 10, sort);
     }
-
-    /**
+    
+     /**
      * Helper to create a layout context where hyperlinks are disabled.
      *
      * @param help the help context
@@ -498,6 +527,11 @@ public class PatientSummary extends PartySummary {
         TableComponentFactory factory = new TableComponentFactory(result);
         result.setComponentFactory(factory);
         return result;
+    }
+    private Boolean hasEstimates(Party patient) {
+        Party customer = rules.getOwner(patient);
+        CustomerEstimateQuery query = new CustomerEstimateQuery(customer);
+        return query.hasEstimates(patient);
     }
 
     /**
@@ -518,6 +552,11 @@ public class PatientSummary extends PartySummary {
             getLayout().add(ColumnFactory.create("Inset", table));
             show();
         }
+        public ViewerDialog(String title, String style) {
+            super(title, style, OK);
+            setModal(true);
+             
+        }
 
     }
 
@@ -527,11 +566,11 @@ public class PatientSummary extends PartySummary {
     private static class ObjectDialog extends PopupDialog {
 
         /**
-         * Contructs a {@code ObjectDialog}
+         * Constructs a {@code ObjectDialog}
          *
          * @param title string The dialog title
          * @param style string the window style
-         * @param objectview Objectviewer object that contains the object to be
+         * @param objectview Object viewer that contains the object to be
          * displayed
          */
         public ObjectDialog(String title, String style, IMObjectViewer objectview) {
@@ -542,7 +581,12 @@ public class PatientSummary extends PartySummary {
             show();
         }
     }
-
+    protected static class EstimateTableModel extends AbstractActTableModel {
+        
+        public EstimateTableModel(Context context, HelpContext help) {
+            super(new String[]{EstimateArchetypes.ESTIMATE}, createLayoutContext(context, help));
+        }
+    }
     private static class ReminderTableModel extends AbstractActTableModel {
 
         /**

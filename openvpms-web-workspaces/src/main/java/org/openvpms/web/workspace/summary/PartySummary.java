@@ -29,6 +29,7 @@ import org.openvpms.web.workspace.alert.AlertSummary;
 
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Date;
 import java.util.List;
 
 
@@ -147,13 +148,14 @@ public abstract class PartySummary {
         }
         return result;
     }
-
+    
     /**
      * Returns outstanding alerts for a party.
      *
      * @param party    the party
      * @param pageSize the no. of alerts to return per page
      * @return the set of outstanding alerts for the party
+     * @author benjamincharlton
      */
     protected abstract ResultSet<Act> createAlertsResultSet(Party party, int pageSize);
 }
