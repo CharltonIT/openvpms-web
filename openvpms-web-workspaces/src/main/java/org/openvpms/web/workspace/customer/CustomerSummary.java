@@ -54,7 +54,6 @@ import org.openvpms.web.echo.help.HelpContext;
 import org.openvpms.web.system.ServiceHelper;
 import org.openvpms.web.workspace.alert.Alert;
 import org.openvpms.web.workspace.alert.AlertSummary;
-import org.openvpms.web.workspace.customer.estimate.CustomerEstimateQuery;
 import org.openvpms.web.workspace.customer.note.CustomerAlertQuery;
 import org.openvpms.web.workspace.summary.PartySummary;
 
