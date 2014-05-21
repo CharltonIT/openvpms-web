@@ -16,18 +16,26 @@
 
 package org.openvpms.web.workspace.patient.history;
 
+import org.openvpms.archetype.rules.act.ActStatus;
 import org.openvpms.archetype.rules.patient.PatientArchetypes;
 import org.openvpms.component.business.domain.im.act.Act;
 import org.openvpms.component.business.service.archetype.helper.TypeHelper;
 import org.openvpms.web.component.app.Context;
 import org.openvpms.web.component.im.archetype.Archetypes;
 import org.openvpms.web.component.im.edit.IMObjectActions;
+import org.openvpms.web.component.im.edit.IMObjectEditor;
+import org.openvpms.web.component.im.edit.IMObjectEditorFactory;
+import org.openvpms.web.component.im.edit.act.AbstractActEditor;
+import org.openvpms.web.component.im.layout.LayoutContext;
 import org.openvpms.web.component.im.relationship.RelationshipHelper;
+import org.openvpms.web.component.im.util.IMObjectCreator;
 import org.openvpms.web.component.workspace.AbstractCRUDWindow;
 import org.openvpms.web.echo.dialog.ConfirmationDialog;
 import org.openvpms.web.echo.dialog.PopupDialogListener;
 import org.openvpms.web.echo.help.HelpContext;
 import org.openvpms.web.resource.i18n.Messages;
+import org.openvpms.web.system.ServiceHelper;
+import org.openvpms.web.workspace.patient.PatientMedicalRecordLinker;
 import org.openvpms.web.workspace.patient.PatientRecordCRUDWindow;
 
 import java.util.Arrays;
@@ -94,6 +102,45 @@ public class AbstractPatientHistoryCRUDWindow extends AbstractCRUDWindow<Act> im
         } else {
             super.onCreated(object);
         }
+    }
+
+    /**
+     * Creates a {@link PatientMedicalRecordLinker} to link medical records.
+     *
+     * @param event the patient clinical event
+     * @param item  the patient record item
+     */
+    protected PatientMedicalRecordLinker createMedicalRecordLinker(Act event, Act item) {
+        return new PatientMedicalRecordLinker(event, item);
+    }
+
+    /**
+     * Creates a {@link PatientMedicalRecordLinker} to link medical records.
+     *
+     * @param event   the patient clinical event. May be {@code null}
+     * @param problem the patient clinical problem. May be {@code null}
+     * @param item    the patient record item. May be {@code null}
+     */
+    protected PatientMedicalRecordLinker createMedicalRecordLinker(Act event, Act problem, Act item) {
+        return new PatientMedicalRecordLinker(event, problem, item);
+    }
+
+    /**
+     * Creates a new event, making it the current event.
+     */
+    protected void createEvent() {
+        Act event = (Act) IMObjectCreator.create(PatientArchetypes.CLINICAL_EVENT);
+        if (event == null) {
+            throw new IllegalStateException("Failed to create " + PatientArchetypes.CLINICAL_EVENT);
+        }
+        LayoutContext layoutContext = createLayoutContext(getHelpContext());
+        IMObjectEditor editor = ServiceHelper.getBean(IMObjectEditorFactory.class).create(event, layoutContext);
+        editor.getComponent();
+        if (editor instanceof AbstractActEditor) {
+            ((AbstractActEditor) editor).setStatus(ActStatus.COMPLETED);
+        }
+        editor.save();
+        setEvent(event);
     }
 
     /**

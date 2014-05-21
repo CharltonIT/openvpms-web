@@ -17,29 +17,29 @@
 package org.openvpms.web.workspace.patient.history;
 
 import nextapp.echo2.app.Component;
-import nextapp.echo2.app.Label;
-import org.apache.commons.lang.StringUtils;
 import org.openvpms.archetype.rules.finance.account.CustomerAccountArchetypes;
 import org.openvpms.archetype.rules.patient.PatientArchetypes;
+import org.openvpms.archetype.rules.util.DateRules;
 import org.openvpms.component.business.domain.im.act.Act;
-import org.openvpms.component.business.domain.im.act.DocumentAct;
 import org.openvpms.component.business.domain.im.act.FinancialAct;
 import org.openvpms.component.business.domain.im.common.IMObjectReference;
 import org.openvpms.component.business.service.archetype.helper.ActBean;
 import org.openvpms.component.business.service.archetype.helper.TypeHelper;
 import org.openvpms.component.system.common.query.ArchetypeQuery;
+import org.openvpms.component.system.common.query.Constraints;
 import org.openvpms.component.system.common.query.NodeSelectConstraint;
 import org.openvpms.component.system.common.query.ObjectSet;
 import org.openvpms.component.system.common.query.ObjectSetQueryIterator;
-import org.openvpms.web.component.im.doc.DocumentViewer;
 import org.openvpms.web.component.im.layout.LayoutContext;
 import org.openvpms.web.component.im.util.IMObjectHelper;
-import org.openvpms.web.echo.factory.RowFactory;
-import org.openvpms.web.echo.style.Styles;
 import org.openvpms.web.resource.i18n.Messages;
 import org.openvpms.web.resource.i18n.format.NumberFormatter;
 
+import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
+
+import static org.openvpms.component.system.common.query.Constraints.shortName;
 
 
 /**
@@ -59,62 +59,41 @@ public class PatientHistoryTableModel extends AbstractPatientHistoryTableModel {
     }
 
     /**
+     * Returns the name of an act to display in the Type column.
+     *
+     * @param bean the act
+     * @param row  the current row
+     * @return the name
+     */
+    @Override
+    protected String getTypeName(ActBean bean, int row) {
+        String result = super.getTypeName(bean, row);
+        if (bean.isA(PatientArchetypes.CLINICAL_PROBLEM)) {
+            if (isOngoingProblem(bean)) {
+                result = Messages.format("patient.record.summary.ongoingProblem", result);
+            }
+        }
+        return result;
+    }
+
+    /**
      * Formats an act item.
      *
      * @param bean the item bean
+     * @param row  the current row
      * @return a component representing the item
      */
-    protected Component formatItem(ActBean bean) {
+    @Override
+    protected Component formatItem(ActBean bean, int row) {
         Component detail;
-        if (bean.isA("act.patientInvestigation*") || bean.isA("act.patientDocument*")) {
-            detail = getDocumentDetail((DocumentAct) bean.getAct());
-        } else if (bean.isA(PatientArchetypes.PATIENT_MEDICATION)) {
+        if (bean.isA(PatientArchetypes.PATIENT_MEDICATION)) {
             detail = getMedicationDetail(bean);
         } else if (bean.isA(CustomerAccountArchetypes.INVOICE_ITEM)) {
             detail = getInvoiceItemDetail(bean);
         } else {
-            detail = super.formatItem(bean);
+            detail = super.formatItem(bean, row);
         }
         return detail;
-    }
-
-    /**
-     * Returns a component for the act type.
-     * <p/>
-     * This indents document version acts.
-     *
-     * @param act the act
-     * @return a component representing the act type
-     */
-    @Override
-    protected Component getType(Act act) {
-        Component result = super.getType(act);
-        if (TypeHelper.isA(act, "act.patientDocument*Version")) {
-            result = RowFactory.create("InsetX", result);
-        }
-        return result;
-    }
-
-    /**
-     * Returns a component for the detail of an act.patientDocument*. or
-     * act.patientInvestigation*.
-     *
-     * @param act the act
-     * @return a new component
-     */
-    private Component getDocumentDetail(DocumentAct act) {
-        Component result;
-        Label label = getTextDetail(act);
-
-        DocumentViewer viewer = new DocumentViewer(act, true, getContext());
-        viewer.setShowNoDocument(false);
-
-        if (StringUtils.isEmpty(label.getText())) {
-            result = viewer.getComponent();
-        } else {
-            result = RowFactory.create(Styles.CELL_SPACING, label, viewer.getComponent());
-        }
-        return result;
     }
 
     /**
@@ -157,6 +136,67 @@ public class PatientHistoryTableModel extends AbstractPatientHistoryTableModel {
 
         }
         return getTextDetail(text);
+    }
+
+    /**
+     * Determines if a problem is an ongoing one.
+     *
+     * @param bean the problem
+     * @return {@code true} if the problem is ongoing
+     */
+    private boolean isOngoingProblem(ActBean bean) {
+        List<IMObjectReference> eventRefs = bean.getNodeSourceObjectRefs("events");
+        if (eventRefs.size() > 1) {
+            Act event = getParent(bean.getAct());
+            if (event != null) {
+                eventRefs.remove(event.getObjectReference());
+                return !isEarliestEvent(event, eventRefs);
+            }
+        }
+        return false;
+    }
+
+    /*
+     * Determines if an event is the earliest in a set of events.
+      *
+     * @param event the event
+     * @param references the event references, excluding the event
+     * @return {@code true} if the event has the earliest start time
+     */
+    private boolean isEarliestEvent(Act event, List<IMObjectReference> references) {
+        boolean result = false;
+        List<Long> dates = new ArrayList<Long>();
+        // try and find all of the events in the list of objects first.
+        for (Act object : getObjects()) {
+            if (TypeHelper.isA(object, PatientArchetypes.CLINICAL_EVENT)
+                && references.remove(object.getObjectReference())) {
+                dates.add(object.getActivityStartTime().getTime());
+            }
+        }
+        if (references.isEmpty()) {
+            // found all of the events
+            Collections.sort(dates);
+            result = event.getActivityStartTime().getTime() < dates.get(0);
+        } else {
+            // need to hit the database to find the earliest event
+            Object[] ids = new Object[references.size()];
+            for (int j = 0; j < references.size(); ++j) {
+                ids[j] = references.get(j).getId();
+            }
+            ArchetypeQuery query = new ArchetypeQuery(shortName("event", PatientArchetypes.CLINICAL_EVENT));
+            query.add(Constraints.sort("startTime"));
+            query.add(new NodeSelectConstraint("event.startTime"));
+            query.add(Constraints.in("id", ids));
+            query.setMaxResults(1);
+            ObjectSetQueryIterator iterator = new ObjectSetQueryIterator(query);
+            if (iterator.hasNext()) {
+                ObjectSet set = iterator.next();
+                if (DateRules.compareTo(event.getActivityStartTime(), set.getDate("event.startTime")) < 0) {
+                    result = true;
+                }
+            }
+        }
+        return result;
     }
 
 }

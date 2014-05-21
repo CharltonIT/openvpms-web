@@ -88,6 +88,17 @@ public class PatientHistoryBrowser extends AbstractPatientHistoryBrowser {
     }
 
     /**
+     * Returns the event associated with the supplied act.
+     *
+     * @param act the act. May be {@code null}
+     * @return the event, or {@code null} if none is found
+     */
+    @Override
+    public Act getEvent(Act act) {
+        return getTableModel().getParent(act);
+    }
+
+    /**
      * Creates a new paged table.
      *
      * @param model the table model
@@ -96,12 +107,22 @@ public class PatientHistoryBrowser extends AbstractPatientHistoryBrowser {
     @Override
     protected PagedIMTable<Act> createTable(IMTableModel<Act> model) {
         PatientHistoryQuery query = getQuery();
-        pagedModel = new PagedPatientHistoryTableModel((IMObjectTableModel<Act>) model, getContext().getContext(),
-                                                       query.getActItemShortNames());
+        pagedModel = createPagedModel((IMObjectTableModel<Act>) model, query);
         pagedModel.setSortAscending(query.isSortAscending());
         PagedIMTable<Act> result = super.createTable(pagedModel);
         initTable(result);
         return result;
+    }
+
+    /**
+     * Creates a new paged history table model.
+     *
+     * @param model the underlying table model
+     * @param query the history query
+     * @return a new paged table model
+     */
+    protected PagedPatientHistoryTableModel createPagedModel(IMObjectTableModel<Act> model, PatientHistoryQuery query) {
+        return new PagedPatientHistoryTableModel(model, getContext().getContext(), query.getActItemShortNames());
     }
 
     /**

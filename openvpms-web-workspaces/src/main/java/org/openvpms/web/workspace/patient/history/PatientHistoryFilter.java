@@ -13,6 +13,7 @@
  *
  * Copyright 2014 (C) OpenVPMS Ltd. All Rights Reserved.
  */
+
 package org.openvpms.web.workspace.patient.history;
 
 import org.openvpms.archetype.rules.finance.account.CustomerAccountArchetypes;
@@ -44,7 +45,7 @@ import java.util.Set;
  *
  * @author Tim Anderson
  */
-class PatientHistoryFilter extends ActHierarchyFilter<Act> {
+public class PatientHistoryFilter extends ActHierarchyFilter<Act> {
 
     /**
      * The short names of the child acts to return.
@@ -59,13 +60,26 @@ class PatientHistoryFilter extends ActHierarchyFilter<Act> {
 
     /**
      * Constructs a {@link PatientHistoryFilter}.
+     * <p/>
+     * Items are sorted on ascending timestamp.
      *
      * @param shortNames the history item short names to include
      */
     public PatientHistoryFilter(String[] shortNames) {
+        this(shortNames, true);
+    }
+
+    /**
+     * Constructs a {@link PatientHistoryFilter}.
+     *
+     * @param shortNames    the history item short names to include
+     * @param sortAscending if {@code true} sort items on ascending timestamp; otherwise sort on descending timestamp
+     */
+    public PatientHistoryFilter(String[] shortNames, boolean sortAscending) {
         super();
         this.shortNames = new ArrayList<String>(Arrays.asList(shortNames));
         invoice = this.shortNames.remove(CustomerAccountArchetypes.INVOICE_ITEM);
+        setSortItemsAscending(sortAscending);
     }
 
     /**
@@ -84,6 +98,29 @@ class PatientHistoryFilter extends ActHierarchyFilter<Act> {
             result = children;
         }
         return result;
+    }
+
+    /**
+     * Determines if a child act should be included.
+     * <p/>
+     * This implementation excludes children of <em>act.patientClinicalProblem</em> acts that are linked to an event
+     * different to the root.
+     *
+     * @param child  the child act
+     * @param parent the parent act
+     * @param root   the root act
+     * @return {@code true} if the child act should be included
+     */
+    @Override
+    protected boolean include(Act child, Act parent, Act root) {
+        if (TypeHelper.isA(parent, PatientArchetypes.CLINICAL_PROBLEM)) {
+            ActBean bean = new ActBean(child);
+            IMObjectReference event = bean.getNodeSourceObjectRef("event");
+            if (event != null && event.getId() != root.getId()) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /**

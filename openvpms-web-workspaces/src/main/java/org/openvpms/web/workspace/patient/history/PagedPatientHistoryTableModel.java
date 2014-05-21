@@ -13,6 +13,7 @@
  *
  * Copyright 2014 (C) OpenVPMS Ltd. All Rights Reserved.
  */
+
 package org.openvpms.web.workspace.patient.history;
 
 import org.openvpms.component.business.domain.im.act.Act;
@@ -37,7 +38,7 @@ public class PagedPatientHistoryTableModel extends PagedActHierarchyTableModel<A
 
 
     /**
-     * Constructs a {@code PagedPatientHistoryTableModel}.
+     * Constructs a {@link PagedPatientHistoryTableModel}.
      *
      * @param model      the underlying table model
      * @param context    the context
@@ -57,19 +58,23 @@ public class PagedPatientHistoryTableModel extends PagedActHierarchyTableModel<A
     }
 
     /**
-     * Creates a new {@link ActHierarchyIterator}.
+     * Determines if the visit items are being sorted ascending or descending.
      *
-     * @param objects    the acts
-     * @param shortNames the child archetype short names
-     * @param context    the context
-     * @return an iterator to flatten the act hierarchy
+     * @return {@code true} if visit items are to be sorted ascending; {@code false} if descending
      */
-    @Override
-    protected ActHierarchyIterator<Act> createFlattener(List<Act> objects, String[] shortNames, Context context) {
-        PatientHistoryFilter filter = new PatientHistoryFilter(shortNames);
-        filter.setSortItemsAscending(sortAscending);
-        // maxDepth = 2 - display the events, and their immediate children
-        return new ActHierarchyIterator<Act>(objects, filter, 2);
+    public boolean isSortAscending() {
+        return sortAscending;
     }
 
+    /**
+     * Creates an iterator over the act hierarchy.
+     *
+     * @param objects    the objects to iterate over
+     * @param shortNames the child archetype short names to include in the iteration
+     * @return a new iterator
+     */
+    @Override
+    protected ActHierarchyIterator<Act> createIterator(List<Act> objects, String[] shortNames) {
+        return new PatientHistoryIterator(objects, shortNames, sortAscending);
+    }
 }

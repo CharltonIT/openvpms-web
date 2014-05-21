@@ -19,13 +19,12 @@ package org.openvpms.web.workspace.patient.history;
 import echopointng.LabelEx;
 import echopointng.xhtml.XhtmlFragment;
 import nextapp.echo2.app.Alignment;
-import nextapp.echo2.app.ApplicationInstance;
 import nextapp.echo2.app.Component;
 import nextapp.echo2.app.Extent;
 import nextapp.echo2.app.HttpImageReference;
+import nextapp.echo2.app.Insets;
 import nextapp.echo2.app.Label;
 import nextapp.echo2.app.Row;
-import nextapp.echo2.app.Style;
 import nextapp.echo2.app.layout.RowLayoutData;
 import nextapp.echo2.app.table.DefaultTableColumnModel;
 import nextapp.echo2.app.table.TableColumn;
@@ -39,16 +38,17 @@ import org.openvpms.archetype.rules.patient.PatientRules;
 import org.openvpms.archetype.rules.user.UserArchetypes;
 import org.openvpms.archetype.rules.util.DateRules;
 import org.openvpms.component.business.domain.im.act.Act;
+import org.openvpms.component.business.domain.im.act.DocumentAct;
 import org.openvpms.component.business.domain.im.common.IMObjectReference;
 import org.openvpms.component.business.domain.im.party.Party;
 import org.openvpms.component.business.service.archetype.ArchetypeServiceFunctions;
 import org.openvpms.component.business.service.archetype.helper.ActBean;
-import org.openvpms.component.business.service.archetype.helper.DescriptorHelper;
 import org.openvpms.component.business.service.archetype.helper.IMObjectBean;
 import org.openvpms.component.business.service.archetype.helper.TypeHelper;
 import org.openvpms.component.system.common.exception.OpenVPMSException;
 import org.openvpms.component.system.common.jxpath.JXPathHelper;
 import org.openvpms.component.system.common.query.SortConstraint;
+import org.openvpms.web.component.im.doc.DocumentViewer;
 import org.openvpms.web.component.im.layout.LayoutContext;
 import org.openvpms.web.component.im.table.AbstractIMObjectTableModel;
 import org.openvpms.web.component.im.util.IMObjectHelper;
@@ -57,12 +57,14 @@ import org.openvpms.web.echo.factory.ComponentFactory;
 import org.openvpms.web.echo.factory.LabelFactory;
 import org.openvpms.web.echo.factory.RowFactory;
 import org.openvpms.web.echo.style.Styles;
+import org.openvpms.web.echo.style.UserStyleSheets;
 import org.openvpms.web.resource.i18n.Messages;
 import org.openvpms.web.resource.i18n.format.DateFormatter;
 import org.openvpms.web.system.ServiceHelper;
 
 import java.util.Date;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -77,6 +79,7 @@ import java.util.Map;
  */
 public abstract class AbstractPatientHistoryTableModel extends AbstractIMObjectTableModel<Act> {
 
+    private static final int DEFAULT_WIDTH = 150;
     /**
      * The parent act short name.
      */
@@ -117,6 +120,21 @@ public abstract class AbstractPatientHistoryTableModel extends AbstractIMObjectT
      * The last processed row, used to determine if the clinician cache needs to be refreshed.
      */
     private int lastRow;
+
+    /**
+     * The padding, in pixels, used to indent the Type.
+     */
+    private int typePadding = -1;
+
+    /**
+     * The width of the Type column, in pixels.
+     */
+    private int typeWidth = -1;
+
+    /**
+     * The width of the clinician column, in pixels.
+     */
+    private int clinicianWidth = -1;
 
     /**
      * Column indicating the selected parent record.
@@ -163,6 +181,7 @@ public abstract class AbstractPatientHistoryTableModel extends AbstractIMObjectT
             IMObjectBean bean = new IMObjectBean(practice);
             showClinician = bean.getBoolean("showClinicianInHistoryItems");
         }
+        initStyles();
     }
 
     /**
@@ -230,6 +249,33 @@ public abstract class AbstractPatientHistoryTableModel extends AbstractIMObjectT
     }
 
     /**
+     * Returns the parent of the supplied act.
+     *
+     * @param act the act. May be {@code null}
+     * @return the parent, or {@code null} if none is found
+     */
+    public Act getParent(Act act) {
+        return (act != null) ? getParent(act, parentShortName) : null;
+    }
+
+    /**
+     * Returns the parent of the supplied act.
+     *
+     * @param act       the act. May be {@code null}
+     * @param shortName the parent act short name
+     * @return the parent, or {@code null} if none is found
+     */
+    public Act getParent(Act act, String shortName) {
+        boolean found;
+        List<Act> acts = getObjects();
+        int index = acts.indexOf(act);
+        while (!(found = TypeHelper.isA(act, shortName)) && index > 0) {
+            act = acts.get(--index);
+        }
+        return (found) ? act : null;
+    }
+
+    /**
      * Returns the layout context.
      *
      * @return the layout context
@@ -255,11 +301,12 @@ public abstract class AbstractPatientHistoryTableModel extends AbstractIMObjectT
                 }
                 break;
             case SUMMARY_COLUMN:
+                ActBean bean = new ActBean(act);
                 try {
                     if (TypeHelper.isA(act, parentShortName)) {
-                        result = formatParent(act, row);
+                        result = formatParent(bean, row);
                     } else {
-                        result = formatItem(act, row, showClinician);
+                        result = formatItem(bean, row, showClinician);
                     }
                 } catch (OpenVPMSException exception) {
                     ErrorHelper.show(exception);
@@ -272,17 +319,17 @@ public abstract class AbstractPatientHistoryTableModel extends AbstractIMObjectT
     /**
      * Returns a component for a parent act.
      *
-     * @param act the parent act
-     * @param row the current row
+     * @param bean the parent act
+     * @param row  the current row
      * @return a component representing the act
      * @throws OpenVPMSException for any error
      */
-    protected Component formatParent(Act act, int row) {
-        ActBean bean = new ActBean(act);
+    protected Component formatParent(ActBean bean, int row) {
+        Act act = bean.getAct();
         String started = null;
         String completed = null;
         String clinician;
-        String reason = getReason(act);
+        String reason = getReason(bean.getAct());
         if (StringUtils.isEmpty(reason)) {
             reason = Messages.get("patient.record.summary.reason.none");
         }
@@ -326,15 +373,15 @@ public abstract class AbstractPatientHistoryTableModel extends AbstractIMObjectT
     /**
      * Returns a component for an act item.
      *
-     * @param act the act item
-     * @param row the current row
+     * @param bean the act item
+     * @param row  the current row
      * @return a component representing the act
      * @throws OpenVPMSException for any error
      */
-    protected Component formatItem(Act act, int row, boolean showClinician) {
-        ActBean bean = new ActBean(act);
+    protected Component formatItem(ActBean bean, int row, boolean showClinician) {
+        Act act = bean.getAct();
         Component date = getDate(act, row);
-        Component type = getType(act);
+        Component type = getType(bean, row);
         Component clinician = (showClinician) ? getClinicianLabel(bean, row) : null;
         Component detail;
 
@@ -347,7 +394,7 @@ public abstract class AbstractPatientHistoryTableModel extends AbstractIMObjectT
             clinician.setLayoutData(layout);
         }
 
-        detail = formatItem(bean);
+        detail = formatItem(bean, row);
         Row padding = RowFactory.create(Styles.INSET, new Label(""));
         Row item = RowFactory.create(Styles.CELL_SPACING, padding, date, type);
         if (clinician != null) {
@@ -361,23 +408,68 @@ public abstract class AbstractPatientHistoryTableModel extends AbstractIMObjectT
      * Formats an act item.
      *
      * @param bean the item bean
+     * @param row  the current row
      * @return a component representing the item
      */
-    protected Component formatItem(ActBean bean) {
+    protected Component formatItem(ActBean bean, int row) {
+        if (bean.isA("act.patientInvestigation*") || bean.isA("act.patientDocument*")) {
+            return getDocumentDetail((DocumentAct) bean.getAct());
+        }
         return getTextDetail(bean.getAct());
     }
 
     /**
      * Returns a component for the act type.
+     * <p/>
+     * This indents the type depending on the acts depth in the act hierarchy.
      *
-     * @param act the act
+     * @param bean the act
+     * @param row  the current row
      * @return a component representing the act type
      */
-    protected Component getType(Act act) {
-        String text = DescriptorHelper.getDisplayName(act);
+    protected Component getType(ActBean bean, int row) {
+        Component result;
+        String text = getTypeName(bean, row);
         LabelEx label = new LabelEx(text);
         label.setStyleName("MedicalRecordSummary.type");
-        return label;
+        int depth = getDepth(bean);
+        result = label;
+        if (depth > 0) {
+            int inset = depth * typePadding;
+            label.setInsets(new Insets(inset, 0, 0, 0));
+            label.setWidth(new Extent(typeWidth - inset));
+        }
+        return result;
+    }
+
+    /**
+     * Returns the name of an act to display in the Type column.
+     *
+     * @param bean the act
+     * @param row  the current row
+     * @return the name
+     */
+    protected String getTypeName(ActBean bean, int row) {
+        return bean.getDisplayName();
+    }
+
+    /**
+     * Returns the depth of an act relative to an event or problem.
+     * <p/>
+     * This is used to inset child acts.
+     *
+     * @param bean the act
+     * @return the minimum number of steps to a parent event/problem
+     */
+    protected int getDepth(ActBean bean) {
+        int depth = 0;
+        if (bean.isA("act.patientDocument*Version")) {
+            ++depth;
+        }
+        if (bean.hasNode("problem") && !bean.getNodeSourceObjectRefs("problem").isEmpty()) {
+            ++depth;
+        }
+        return depth;
     }
 
     /**
@@ -402,17 +494,11 @@ public abstract class AbstractPatientHistoryTableModel extends AbstractIMObjectT
     protected Component getClinicianLabel(ActBean bean, int row) {
         String clinician = getClinician(bean, row);
         // Need to jump through some hoops to restrict long clinician names from exceeding the column width.
-        Object width = null;
-        Style style = ApplicationInstance.getActive().getStyle(LabelEx.class, "MedicalRecordSummary.clinician");
-        if (style != null) {
-            width = style.getProperty("width");
-        }
-        if (width == null) {
-            width = "150px";
-        }
-        String content = "<div xmlns='http://www.w3.org/1999/xhtml' style='width:" + width + "; overflow:hidden'>"
-                         + clinician + "</div>";
-        return new LabelEx(new XhtmlFragment(content));
+        String content = "<div xmlns='http://www.w3.org/1999/xhtml' style='width:" + clinicianWidth
+                         + "px; overflow:hidden'>" + clinician + "</div>";
+        LabelEx label = new LabelEx(new XhtmlFragment(content));
+        label.setStyleName("MedicalRecordSummary.clinician");
+        return label;
     }
 
     /**
@@ -445,6 +531,27 @@ public abstract class AbstractPatientHistoryTableModel extends AbstractIMObjectT
             clinician = Messages.get("patient.record.summary.clinician.none");
         }
         return clinician;
+    }
+
+    /**
+     * Returns a component for the detail of an act.patientDocument*. or act.patientInvestigation*.
+     *
+     * @param act the act
+     * @return a new component
+     */
+    protected Component getDocumentDetail(DocumentAct act) {
+        Component result;
+        Label label = getTextDetail(act);
+
+        DocumentViewer viewer = new DocumentViewer(act, true, getContext());
+        viewer.setShowNoDocument(false);
+
+        if (StringUtils.isEmpty(label.getText())) {
+            result = viewer.getComponent();
+        } else {
+            result = RowFactory.create(Styles.CELL_SPACING, label, viewer.getComponent());
+        }
+        return result;
     }
 
     /**
@@ -570,5 +677,26 @@ public abstract class AbstractPatientHistoryTableModel extends AbstractIMObjectT
         return date;
     }
 
+    /**
+     * Initialises the typePadding, typeWidth, and clinicianWidth style properties.
+     */
+    private void initStyles() {
+        UserStyleSheets styleSheets = ServiceHelper.getBean(UserStyleSheets.class);
+        org.openvpms.web.echo.style.Style style = styleSheets.getStyle();
+        if (style != null) {
+            typePadding = style.getProperty("padding.large", 10);
+            typeWidth = style.getProperty("history.type.width", DEFAULT_WIDTH);
+            clinicianWidth = style.getProperty("history.clinician.width", DEFAULT_WIDTH);
+        }
+        if (typePadding <= 0) {
+            typePadding = 10;
+        }
+        if (typeWidth <= 0) {
+            typeWidth = DEFAULT_WIDTH;
+        }
+        if (clinicianWidth <= 0) {
+            clinicianWidth = DEFAULT_WIDTH;
+        }
+    }
 
 }
