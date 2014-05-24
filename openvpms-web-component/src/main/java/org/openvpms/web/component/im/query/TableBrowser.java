@@ -16,6 +16,10 @@
 
 package org.openvpms.web.component.im.query;
 
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
+import java.util.Collections;
+import java.util.List;
 import nextapp.echo2.app.Alignment;
 import nextapp.echo2.app.Component;
 import nextapp.echo2.app.Label;
@@ -24,6 +28,7 @@ import nextapp.echo2.app.event.ActionEvent;
 import nextapp.echo2.app.event.TableModelEvent;
 import nextapp.echo2.app.event.TableModelListener;
 import nextapp.echo2.app.layout.ColumnLayoutData;
+import nextapp.echo2.app.list.DefaultListSelectionModel;
 import org.openvpms.component.system.common.query.IPage;
 import org.openvpms.component.system.common.query.SortConstraint;
 import org.openvpms.web.component.im.layout.LayoutContext;
@@ -34,11 +39,6 @@ import org.openvpms.web.component.im.table.PagedIMTableModel;
 import org.openvpms.web.echo.event.ActionListener;
 import org.openvpms.web.echo.factory.LabelFactory;
 import org.openvpms.web.echo.focus.FocusHelper;
-
-import java.beans.PropertyChangeEvent;
-import java.beans.PropertyChangeListener;
-import java.util.Collections;
-import java.util.List;
 
 
 /**
@@ -107,6 +107,16 @@ public abstract class TableBrowser<T> extends AbstractQueryBrowser<T> {
      */
     public T getSelected() {
         return (table != null) ? table.getTable().getSelected() : null;
+    }
+    
+    public List<T> getMultipleSelected() {
+        return (table != null) ? table.getTable().getMultipleSelect() : null;
+    }
+    
+    public void setSelectMultiple() {
+        IMTable imTable = table.getTable();
+        DefaultListSelectionModel lsm = (DefaultListSelectionModel)imTable.getSelectionModel();
+        lsm.setSelectionMode(DefaultListSelectionModel.MULTIPLE_SELECTION);
     }
 
     /**

@@ -16,6 +16,7 @@
 
 package org.openvpms.web.component.im.table;
 
+import java.util.List;
 import nextapp.echo2.app.Column;
 import nextapp.echo2.app.event.ActionEvent;
 import org.openvpms.web.component.im.query.ResultSet;
@@ -110,6 +111,10 @@ public class PagedIMTable<T> extends Column {
      */
     public T getSelected() {
         return table.getSelected();
+    }
+    
+    public List<T> getMultipleSelected() {
+        return table.getMultipleSelect();
     }
 
     /**

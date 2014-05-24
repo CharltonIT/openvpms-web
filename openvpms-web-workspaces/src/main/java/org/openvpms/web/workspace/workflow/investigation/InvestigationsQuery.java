@@ -19,6 +19,7 @@
 package org.openvpms.web.workspace.workflow.investigation;
 
 import org.openvpms.archetype.rules.patient.InvestigationArchetypes;
+import org.openvpms.archetype.rules.patient.InvestigationActStatus;
 import org.openvpms.component.business.domain.im.act.Act;
 import org.openvpms.component.system.common.query.NodeSortConstraint;
 import org.openvpms.component.system.common.query.SortConstraint;
@@ -57,6 +58,7 @@ public class InvestigationsQuery extends DateRangeActQuery<Act> {
     public InvestigationsQuery() {
         super(null, null, null, SHORT_NAMES, STATUSES, Act.class);
         setDefaultSortConstraint(DEFAULT_SORT);
+        this.setStatus(InvestigationActStatus.RECEIVED);
         setAuto(true);
     }
 

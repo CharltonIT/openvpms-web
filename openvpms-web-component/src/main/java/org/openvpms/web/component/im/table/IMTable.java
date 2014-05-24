@@ -83,6 +83,22 @@ public class IMTable<T> extends KeyTable {
         }
         return result;
     }
+    public List<T> getMultipleSelect() {
+        List<T> result = null;
+        ListSelectionModel lsm = getSelectionModel();
+        int minIndex = lsm.getMinSelectedIndex();
+        int selectLength = lsm.getMaxSelectedIndex();
+        int maxIndex = minIndex + selectLength;
+        List<T> objects = getModel().getObjects();
+        if ((minIndex != -1 && selectLength != -1)&& (minIndex < objects.size() && maxIndex < objects.size())) {
+        for (int i = minIndex; i <= maxIndex; i++) {
+            T object = objects.get(i);
+            boolean add = result.add(object);
+        }
+        }
+        return result;
+            
+    }
 
     /**
      * Sets the selected object.
@@ -110,7 +126,7 @@ public class IMTable<T> extends KeyTable {
     public IMTableModel<T> getModel() {
         return (IMTableModel<T>) super.getModel();
     }
-
+    
     /**
      * Sets the <tt>TableModel</tt> being visualized.
      *
@@ -143,6 +159,7 @@ public class IMTable<T> extends KeyTable {
     }
 
     /**
+     * 
      * Adds a listener to the table model to re-initialise this on column
      * changes.
      *
