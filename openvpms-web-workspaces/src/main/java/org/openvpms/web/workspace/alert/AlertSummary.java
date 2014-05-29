@@ -99,6 +99,9 @@ public class AlertSummary {
     public Component getComponent() {
         Column result = ColumnFactory.create();
         Collections.sort(alerts);
+
+        Row title = RowFactory.create(LabelFactory.create("alerts.title"));
+        result.add(title);
         for (int i = 0; i < alerts.size() && i < showCount; ++i) {
             Alert element = alerts.get(i);
             result.add(getButton(element));
@@ -116,16 +119,11 @@ public class AlertSummary {
         right.setLayoutData(rightLayout);
 
         Row row;
-        if (alerts.size() > 4) {
-            Label more = LabelFactory.create("alerts.more", "small.bold");
-            row = RowFactory.create("WideCellSpacing", more, right);
-        } else {
-            row = RowFactory.create(right);
-            ColumnLayoutData col = new ColumnLayoutData();
-            col.setAlignment(Alignment.ALIGN_RIGHT);
-            row.setLayoutData(col);
+        if (alerts.size() > showCount) {
+            row = RowFactory.create("WideCellSpacing", title, right);
+            result.add(row, 0);
         }
-        result.add(row);
+        
         return result;
     }
 

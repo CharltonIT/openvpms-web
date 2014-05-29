@@ -16,6 +16,9 @@
 
 package org.openvpms.web.workspace.customer;
 
+import java.math.BigDecimal;
+import java.util.Date;
+import java.util.List;
 import nextapp.echo2.app.Button;
 import nextapp.echo2.app.Column;
 import nextapp.echo2.app.Component;
@@ -31,7 +34,6 @@ import org.openvpms.component.business.domain.im.act.Act;
 import org.openvpms.component.business.domain.im.lookup.Lookup;
 import org.openvpms.component.business.domain.im.party.Contact;
 import org.openvpms.component.business.domain.im.party.Party;
-import org.openvpms.component.business.domain.im.security.User;
 import org.openvpms.component.business.service.archetype.helper.IMObjectBean;
 import org.openvpms.web.component.app.Context;
 import org.openvpms.web.component.app.LocalContext;
@@ -56,11 +58,6 @@ import org.openvpms.web.workspace.customer.note.CustomerAlertQuery;
 import org.openvpms.web.workspace.summary.PartySummary;
 
 
-import java.math.BigDecimal;
-import java.util.Date;
-import java.util.List;
-
-
 /**
  * Renders customer summary information.
  *
@@ -78,7 +75,7 @@ public class CustomerSummary extends PartySummary {
      */
     private CustomerAccountRules accountRules;
     private Party practice;
-    private boolean showAccountSummary;
+    private boolean hideAccountSummary;
 
     /**
      * Constructs a {@code CustomerSummary}.
@@ -107,8 +104,11 @@ public class CustomerSummary extends PartySummary {
         customerName.setStyleName("hyperlink-bold");
         column.add(RowFactory.create("Inset.Small",
                                      customerName.getComponent()));
+        Label customerID = LabelFactory.create();
+        customerID.setText(String.valueOf("ID: "+party.getId()));
+        column.add(RowFactory.create("Inset.Small", customerID));
         Label phone = LabelFactory.create();
-        phone.setText(partyRules.getTelephone(party));
+        phone.setText(partyRules.getTelephone(party, true));
         column.add(RowFactory.create("Inset.Small", phone));
 
         Contact email = ContactHelper.getPreferredEmail(party);
@@ -117,12 +117,12 @@ public class CustomerSummary extends PartySummary {
         }
         final Context context = getContext();
         Party practice=context.getPractice();
-        showAccountSummary = true;
+        hideAccountSummary = true;
         if (practice !=null){
             IMObjectBean bean = new IMObjectBean(practice);
-            showAccountSummary = bean.getBoolean("showCustomerBalanceWindow");
+            hideAccountSummary = bean.getBoolean("hideCustomerBalanceWindow");
         }
-        if (showAccountSummary){
+        if (!hideAccountSummary){
         Label balanceTitle = create("customer.account.balance");
         BigDecimal balance = accountRules.getBalance(party);
         Label balanceValue = create(balance);
@@ -135,26 +135,23 @@ public class CustomerSummary extends PartySummary {
         BigDecimal current = balance.subtract(overdue);
         Label currentValue = create(current);
 
-        Label creditTitle = create("customer.account.credit");
-        BigDecimal credit = accountRules.getCreditBalance(party);
-        Label creditValue = create(credit);
-
         Label unbilledTitle = create("customer.account.unbilled");
         BigDecimal unbilled = accountRules.getUnbilledAmount(party);
         Label unbilledValue = create(unbilled);
+        
+        Label effectiveTitle = create("customer.account.effective");
+        BigDecimal effective = balance.add(unbilled);
+        Label effectiveValue = create(effective);
 
         Grid Balgrid = GridFactory.create(2, balanceTitle, balanceValue,
                                        overdueTitle, overdueValue,
                                        currentTitle, currentValue,
-                                       creditTitle, creditValue,
-                                       unbilledTitle, unbilledValue);
+                                       unbilledTitle, unbilledValue,
+                                       effectiveTitle, effectiveValue);
         column.add(Balgrid);
         }  
         AlertSummary alerts = getAlertSummary(party);
         if (alerts != null) {
-            Label alertTitle = create("alerts.title");
-            Grid AlertGrid = GridFactory.create(2,alertTitle);
-            column.add(AlertGrid);
             column.add(ColumnFactory.create("Inset.Small", alerts.getComponent()));
         }
         Column result = ColumnFactory.create("PartySummary", column);
@@ -194,7 +191,7 @@ public class CustomerSummary extends PartySummary {
         }
         return result;
     }
-
+    
     /**
      * Returns outstanding alerts for a party.
      *
@@ -207,7 +204,6 @@ public class CustomerSummary extends PartySummary {
         query.setStatus(ActStatus.IN_PROGRESS);
         return query.query();
     }
-
     /**
      * Returns a button to launch an {@link MailDialog} for a customer.
      *

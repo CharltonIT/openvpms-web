@@ -10,3 +10,4 @@
 /openvpms-web-echo/target
 /openvpms-web-resource/target
 /openvpms-web-app/openvpms*.log
+nb-configuration.xml
