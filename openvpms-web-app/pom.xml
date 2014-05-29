@@ -25,7 +25,6 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
-
     <artifactId>openvpms-web-app</artifactId>
     <packaging>war</packaging>
 
@@ -222,5 +221,4 @@
         <jetty.port>8080</jetty.port>
         <jetty.sslport>8443</jetty.sslport>
     </properties>
-
 </project>
