@@ -17,17 +17,26 @@
 package org.openvpms.web.workspace.reporting.estimate;
 
 import java.util.Date;
+import nextapp.echo2.app.Component;
+import nextapp.echo2.app.event.ActionEvent;
 import org.openvpms.archetype.rules.act.EstimateActStatus;
 import org.openvpms.archetype.rules.finance.estimate.EstimateArchetypes;
 import org.openvpms.component.business.domain.im.act.Act;
+import org.openvpms.component.system.common.query.AndConstraint;
+import static org.openvpms.component.system.common.query.Constraints.and;
+import static org.openvpms.component.system.common.query.Constraints.eq;
 import static org.openvpms.component.system.common.query.Constraints.gt;
 import static org.openvpms.component.system.common.query.Constraints.isNull;
-import static org.openvpms.component.system.common.query.Constraints.ne;
 import static org.openvpms.component.system.common.query.Constraints.or;
+import org.openvpms.component.system.common.query.IConstraint;
 import org.openvpms.component.system.common.query.NodeSortConstraint;
 import org.openvpms.component.system.common.query.SortConstraint;
+import org.openvpms.web.component.im.query.ActResultSet;
 import org.openvpms.web.component.im.query.ActStatuses;
 import org.openvpms.web.component.im.query.DefaultActQuery;
+import org.openvpms.web.component.im.query.ResultSet;
+import org.openvpms.web.echo.event.ActionListener;
+import org.openvpms.web.echo.focus.FocusHelper;
 
 /**
  *
@@ -35,6 +44,7 @@ import org.openvpms.web.component.im.query.DefaultActQuery;
  */
 public class EstimateQuery extends DefaultActQuery<Act> {
     
+    private final IConstraint constraints;
     /**
      * The act short names.
      */
@@ -47,9 +57,43 @@ public class EstimateQuery extends DefaultActQuery<Act> {
     private static final ActStatuses STATUSES
         = new ActStatuses(EstimateArchetypes.ESTIMATE);
     
+    private String searchText;
+    
     public EstimateQuery() {
         super(SHORT_NAMES, STATUSES);
+        String[] statusConstraints = {EstimateActStatus.IN_PROGRESS, 
+            EstimateActStatus.COMPLETED,
+            EstimateActStatus.POSTED};
+        setStatuses(statusConstraints);
         setDefaultSortConstraint(DEFAULT_SORT);
-        setConstraints(or(ne("status",EstimateActStatus.CANCELLED),or(ne("status",EstimateActStatus.INVOICED),or(isNull("endTime"), gt("endTime", new Date())))));
+        constraints = or(isNull("endTime"), gt("endTime", new Date()));
+        this.setConstraints(constraints);
     }
+    
+    @Override
+    protected void doLayout(Component container) {
+        addStatusSelector(container);
+        addSearchField(container);
+        getSearchField().addActionListener(new ActionListener() {
+            @Override
+            public void onAction(ActionEvent e) {
+                onSearchChange();
+            }
+            });
+        getSearchField().setToolTipText("Searches on estimate ID or Customer Name");
+        FocusHelper.setFocus(getSearchField());
+    }
+    private void onSearchChange() {
+        this.searchText = getWildcardedText(getSearchField());
+    }
+        protected ResultSet<Act> createResultSet(SortConstraint[] sort) {
+            if(searchText != null){
+                setConstraints(eq("id",searchText));
+            }
+        return new ActResultSet<Act>(getArchetypeConstraint(),
+                                   getParticipantConstraint(),
+                                   getFrom(), getTo(), getStatuses(),
+                                   excludeStatuses(), getConstraints(),
+                                   getMaxResults(), sort);
+    } 
 }
