@@ -16,9 +16,12 @@
 
 package org.openvpms.web.workspace.reporting.estimate;
 
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
 import java.util.Date;
 import nextapp.echo2.app.Component;
 import nextapp.echo2.app.event.ActionEvent;
+import org.apache.commons.lang.StringUtils;
 import org.openvpms.archetype.rules.act.EstimateActStatus;
 import org.openvpms.archetype.rules.finance.estimate.EstimateArchetypes;
 import org.openvpms.component.business.domain.im.act.Act;
@@ -59,6 +62,8 @@ public class EstimateQuery extends DefaultActQuery<Act> {
     
     private String searchText;
     
+    private Long  searchId;
+    
     public EstimateQuery() {
         super(SHORT_NAMES, STATUSES);
         String[] statusConstraints = {EstimateActStatus.IN_PROGRESS, 
@@ -68,28 +73,45 @@ public class EstimateQuery extends DefaultActQuery<Act> {
         setDefaultSortConstraint(DEFAULT_SORT);
         constraints = or(isNull("endTime"), gt("endTime", new Date()));
         this.setConstraints(constraints);
+        searchText = null;
+        searchId = null;
     }
     
     @Override
     protected void doLayout(Component container) {
         addStatusSelector(container);
         addSearchField(container);
-        getSearchField().addActionListener(new ActionListener() {
-            @Override
-            public void onAction(ActionEvent e) {
-                onSearchChange();
-            }
-            });
-        getSearchField().setToolTipText("Searches on estimate ID or Customer Name");
+        getSearchField().setToolTipText("Searches on estimate ID or Title");
+        getSearchField().addPropertyChangeListener(new PropertyChangeListener() {
+                    public void propertyChange(PropertyChangeEvent event) {
+                        searchText = getSearchField().getText();
+                    }
+                });
         FocusHelper.setFocus(getSearchField());
     }
-    private void onSearchChange() {
-        this.searchText = getWildcardedText(getSearchField());
+    private void setSearchConstraints() {
+        searchText = getSearchField().getText();
+        if (StringUtils.isNotBlank(searchText)) {
+            if(StringUtils.isNumeric(searchText)) {
+                searchId = Long.valueOf(getSearchField().getText());
+                searchText = null;
+                setConstraints(eq("id", searchId));
+                String[] statusConstraints = {EstimateActStatus.IN_PROGRESS, 
+                                                EstimateActStatus.COMPLETED, EstimateActStatus.POSTED,                                           EstimateActStatus.INVOICED, EstimateActStatus.CANCELLED};
+                setStatuses(statusConstraints);
+            }
+            else {
+                searchId = null;
+                searchText = getWildcardedText(getSearchField());
+                setConstraints(eq("title",searchText));
+            }
+        }else {
+            setConstraints(constraints);
+        }
+        
     }
         protected ResultSet<Act> createResultSet(SortConstraint[] sort) {
-            if(searchText != null){
-                setConstraints(eq("id",searchText));
-            }
+        setSearchConstraints();
         return new ActResultSet<Act>(getArchetypeConstraint(),
                                    getParticipantConstraint(),
                                    getFrom(), getTo(), getStatuses(),

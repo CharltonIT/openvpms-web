@@ -119,7 +119,7 @@ class EstimateTableModel extends AbstractActTableModel {
     public EstimateTableModel(LayoutContext context) {
         super(EstimateQuery.SHORT_NAMES, context);
     }
-
+   
     /**
      * Returns a list of descriptor names to include in the table.
      *
@@ -127,6 +127,6 @@ class EstimateTableModel extends AbstractActTableModel {
      */
     @Override
     protected String[] getNodeNames() {
-        return new String[]{"id", "customer", "status", "startTime", "endTime", "lowTotal", "highTotal", "notes"};
+        return new String[]{"id", "customer", "title", "status", "startTime", "endTime", "lowTotal", "highTotal", "notes"};
     }
 }
