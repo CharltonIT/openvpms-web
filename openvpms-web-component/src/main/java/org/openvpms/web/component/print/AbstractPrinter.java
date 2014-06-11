@@ -120,6 +120,7 @@ public abstract class AbstractPrinter implements Printer {
             properties.setMediaSize(template.getMediaSize());
             properties.setOrientation(template.getOrientationRequested());
             properties.setMediaTray(getMediaTray(template, printer, context));
+            properties.setSides(template.getSides());
         }
         return properties;
     }
