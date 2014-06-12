@@ -28,6 +28,7 @@ import org.openvpms.web.component.app.Context;
 import org.openvpms.web.echo.servlet.DownloadServlet;
 
 import javax.print.attribute.standard.MediaTray;
+import javax.print.attribute.standard.Sides;
 
 
 /**
@@ -120,7 +121,7 @@ public abstract class AbstractPrinter implements Printer {
             properties.setMediaSize(template.getMediaSize());
             properties.setOrientation(template.getOrientationRequested());
             properties.setMediaTray(getMediaTray(template, printer, context));
-            properties.setSides(template.getSides());
+            properties.setSides(getDuplexing(template, printer, context));
         }
         return properties;
     }
@@ -193,6 +194,10 @@ public abstract class AbstractPrinter implements Printer {
     protected MediaTray getMediaTray(DocumentTemplate template, String printer, Context context) {
         DocumentTemplatePrinter relationship = getDocumentTemplatePrinter(template, printer, context);
         return relationship != null ? relationship.getMediaTray() : null;
+    }
+    protected Sides getDuplexing(DocumentTemplate template, String printer, Context context) {
+        DocumentTemplatePrinter relationship = getDocumentTemplatePrinter(template, printer, context);
+        return relationship !=null ? relationship.getSides() : null;
     }
 
     /**
