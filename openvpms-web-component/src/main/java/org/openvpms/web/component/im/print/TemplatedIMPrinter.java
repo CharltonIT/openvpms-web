@@ -61,6 +61,8 @@ public abstract class TemplatedIMPrinter<T> extends AbstractIMPrinter<T> {
         if (template != null) {
             setInteractive(getInteractive(template, getDefaultPrinter(), context));
             setCopies(template.getCopies());
+            //PrintProperties properties = this.getProperties(getDefaultPrinter());
+            template.getPrinter(context.getLocation());
         }
     }
 

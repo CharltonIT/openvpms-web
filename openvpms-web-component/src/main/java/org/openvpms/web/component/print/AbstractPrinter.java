@@ -136,7 +136,8 @@ public abstract class AbstractPrinter implements Printer {
     protected void print(Document document, String printer) {
         String mimeType = document.getMimeType();
         if (DocFormats.ODT_TYPE.equals(mimeType) || DocFormats.DOC_TYPE.equals(mimeType)) {
-            OpenOfficeHelper.getPrintService().print(document, printer, getCopies());
+            OpenOfficeHelper.getPrintService().print(document, printer, getCopies())
+                    ;
         } else {
             DownloadServlet.startDownload(document);
         }
