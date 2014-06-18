@@ -16,9 +16,6 @@
 
 package org.openvpms.web.workspace.customer;
 
-import java.math.BigDecimal;
-import java.util.Date;
-import java.util.List;
 import nextapp.echo2.app.Button;
 import nextapp.echo2.app.Column;
 import nextapp.echo2.app.Component;
@@ -56,6 +53,10 @@ import org.openvpms.web.workspace.alert.Alert;
 import org.openvpms.web.workspace.alert.AlertSummary;
 import org.openvpms.web.workspace.customer.note.CustomerAlertQuery;
 import org.openvpms.web.workspace.summary.PartySummary;
+
+import java.math.BigDecimal;
+import java.util.Date;
+import java.util.List;
 
 
 /**
@@ -120,33 +121,33 @@ public class CustomerSummary extends PartySummary {
             accountSummary = bean.getBoolean("showCustomerAccountSummary");
         }
         if (accountSummary) {
-        Label balanceTitle = create("customer.account.balance");
-        BigDecimal balance = accountRules.getBalance(party);
-        Label balanceValue = create(balance);
+            Label balanceTitle = create("customer.account.balance");
+            BigDecimal balance = accountRules.getBalance(party);
+            Label balanceValue = create(balance);
 
-        Label overdueTitle = create("customer.account.overdue");
-        BigDecimal overdue = accountRules.getOverdueBalance(party, new Date());
-        Label overdueValue = create(overdue);
+            Label overdueTitle = create("customer.account.overdue");
+            BigDecimal overdue = accountRules.getOverdueBalance(party, new Date());
+            Label overdueValue = create(overdue);
 
-        Label currentTitle = create("customer.account.current");
-        BigDecimal current = balance.subtract(overdue);
-        Label currentValue = create(current);
+            Label currentTitle = create("customer.account.current");
+            BigDecimal current = balance.subtract(overdue);
+            Label currentValue = create(current);
 
-        Label unbilledTitle = create("customer.account.unbilled");
-        BigDecimal unbilled = accountRules.getUnbilledAmount(party);
-        Label unbilledValue = create(unbilled);
+            Label unbilledTitle = create("customer.account.unbilled");
+            BigDecimal unbilled = accountRules.getUnbilledAmount(party);
+            Label unbilledValue = create(unbilled);
         
-        Label effectiveTitle = create("customer.account.effective");
-        BigDecimal effective = balance.add(unbilled);
-        Label effectiveValue = create(effective);
+            Label effectiveTitle = create("customer.account.effective");
+            BigDecimal effective = balance.add(unbilled);
+            Label effectiveValue = create(effective);
 
             Grid grid = GridFactory.create(2, balanceTitle, balanceValue,
-                                       overdueTitle, overdueValue,
-                                       currentTitle, currentValue,
-                                       unbilledTitle, unbilledValue,
-                                       effectiveTitle, effectiveValue);
+                                           overdueTitle, overdueValue,
+                                           currentTitle, currentValue,
+                                           unbilledTitle, unbilledValue,
+                                           effectiveTitle, effectiveValue);
             column.add(grid);
-        }  
+        }
         AlertSummary alerts = getAlertSummary(party);
         if (alerts != null) {
             column.add(ColumnFactory.create("Inset.Small", alerts.getComponent()));

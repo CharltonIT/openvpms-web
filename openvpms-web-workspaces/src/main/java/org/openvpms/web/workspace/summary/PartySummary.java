@@ -172,5 +172,5 @@ public abstract class PartySummary {
         Label label = LabelFactory.create();
         label.setText(text);
         return label;
-}
+    }
 }
