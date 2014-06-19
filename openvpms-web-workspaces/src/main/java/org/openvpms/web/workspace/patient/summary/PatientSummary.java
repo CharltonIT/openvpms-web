@@ -18,6 +18,7 @@ package org.openvpms.web.workspace.patient.summary;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
+import nextapp.echo2.app.Button;
 import nextapp.echo2.app.Component;
 import nextapp.echo2.app.Grid;
 import nextapp.echo2.app.Label;
@@ -345,14 +346,15 @@ public class PatientSummary extends PartySummary {
         SupplierRules supplierrules = new SupplierRules(ServiceHelper.getArchetypeService());
         final Party referralPractice = supplierrules.getReferralVetPractice(referralVet, new Date());
         if (referralPractice != null) {
-            Component referralPracticeName;
+            Button referralPracticeName;
             String refpracticenametext = referralPractice.getName();
-            referralPracticeName = ButtonFactory.create(refpracticenametext, "hyperlink-bold", new ActionListener(){
+            referralPracticeName = ButtonFactory.create(null, "hyperlink-bold", new ActionListener(){
               public void onAction(ActionEvent event) {
                     onShowReferralVet(referralPractice);
                 } 
                  
             });
+            referralPracticeName.setText(refpracticenametext);
             return referralPracticeName;
         } else {
             return null;
