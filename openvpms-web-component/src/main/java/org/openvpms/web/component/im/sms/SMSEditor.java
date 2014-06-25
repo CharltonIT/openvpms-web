@@ -16,15 +16,11 @@
 
 package org.openvpms.web.component.im.sms;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
 import nextapp.echo2.app.Component;
 import nextapp.echo2.app.SelectField;
 import nextapp.echo2.app.list.DefaultListModel;
 import nextapp.echo2.app.list.ListModel;
 import org.apache.commons.lang.StringUtils;
-import org.openvpms.component.business.domain.im.archetype.descriptor.NodeDescriptor;
 import org.openvpms.component.business.domain.im.party.Contact;
 import org.openvpms.component.business.service.archetype.helper.IMObjectBean;
 import org.openvpms.macro.Macros;
@@ -53,6 +49,10 @@ import org.openvpms.web.echo.text.CountedTextArea;
 import org.openvpms.web.echo.text.TextField;
 import org.openvpms.web.resource.i18n.Messages;
 import org.openvpms.web.system.ServiceHelper;
+
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 
 
 /**
@@ -354,30 +354,11 @@ public class SMSEditor extends AbstractModifiable {
         } else {
             phone = Messages.format("phone.noAreaCode", phone);
         }
-        if(!comparedefault(bean, "name")) {
-            String name = bean.getString("name");
-            phone += " (" + name +")";
-            }
+        String name = contact.getName();
+        if (!StringUtils.isEmpty(name) && bean.hasNode("name") && !bean.isDefaultValue("name")) {
+            phone += " (" + name + ")";
+        }
         return phone;
-    }
-    /**
-     * 
-     * Compares the contact beans name with the default archetype value and returns true if it matches
-     * @param bean
-     * @param node
-     * @return boolean {@code true} if it matches
-     */
-    private static Boolean comparedefault(IMObjectBean bean, String node){
-            if(bean.hasNode(node)){
-            NodeDescriptor descriptor = bean.getDescriptor(node);
-            String defaultValue = descriptor.getDefaultValue();
-            defaultValue = defaultValue.replace("\'", "");
-            String currentValue = bean.getString(node);
-            return currentValue.equals(defaultValue);
-        }
-        else{
-            return false;
-        }
     }
 
 }

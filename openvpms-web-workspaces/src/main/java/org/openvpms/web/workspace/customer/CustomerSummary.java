@@ -16,9 +16,6 @@
 
 package org.openvpms.web.workspace.customer;
 
-import java.math.BigDecimal;
-import java.util.Date;
-import java.util.List;
 import nextapp.echo2.app.Button;
 import nextapp.echo2.app.Column;
 import nextapp.echo2.app.Component;
@@ -57,6 +54,10 @@ import org.openvpms.web.workspace.alert.AlertSummary;
 import org.openvpms.web.workspace.customer.note.CustomerAlertQuery;
 import org.openvpms.web.workspace.summary.PartySummary;
 
+import java.math.BigDecimal;
+import java.util.Date;
+import java.util.List;
+
 
 /**
  * Renders customer summary information.
@@ -74,8 +75,7 @@ public class CustomerSummary extends PartySummary {
      * The account rules.
      */
     private CustomerAccountRules accountRules;
-    private Party practice;
-    private boolean hideAccountSummary;
+
 
     /**
      * Constructs a {@code CustomerSummary}.
@@ -102,11 +102,9 @@ public class CustomerSummary extends PartySummary {
         IMObjectReferenceViewer customerName = new IMObjectReferenceViewer(party.getObjectReference(),
                                                                            party.getName(), true, getContext());
         customerName.setStyleName("hyperlink-bold");
-        column.add(RowFactory.create("Inset.Small",
-                                     customerName.getComponent()));
-        Label customerID = LabelFactory.create();
-        customerID.setText(String.valueOf("ID: "+party.getId()));
-        column.add(RowFactory.create("Inset.Small", customerID));
+        column.add(RowFactory.create("Inset.Small", customerName.getComponent()));
+        Label customerId = createLabel("customer.id", party.getId());
+        column.add(RowFactory.create("Inset.Small", customerId));
         Label phone = LabelFactory.create();
         phone.setText(partyRules.getTelephone(party, true));
         column.add(RowFactory.create("Inset.Small", phone));
@@ -116,40 +114,40 @@ public class CustomerSummary extends PartySummary {
             column.add(RowFactory.create("Inset.Small", getEmail(email)));
         }
         final Context context = getContext();
-        Party practice=context.getPractice();
-        hideAccountSummary = true;
-        if (practice !=null){
+        Party practice = context.getPractice();
+        boolean accountSummary = true;
+        if (practice != null) {
             IMObjectBean bean = new IMObjectBean(practice);
-            hideAccountSummary = bean.getBoolean("hideCustomerBalanceWindow");
+            accountSummary = bean.getBoolean("showCustomerAccountSummary");
         }
-        if (!hideAccountSummary){
-        Label balanceTitle = create("customer.account.balance");
-        BigDecimal balance = accountRules.getBalance(party);
-        Label balanceValue = create(balance);
+        if (accountSummary) {
+            Label balanceTitle = create("customer.account.balance");
+            BigDecimal balance = accountRules.getBalance(party);
+            Label balanceValue = create(balance);
 
-        Label overdueTitle = create("customer.account.overdue");
-        BigDecimal overdue = accountRules.getOverdueBalance(party, new Date());
-        Label overdueValue = create(overdue);
+            Label overdueTitle = create("customer.account.overdue");
+            BigDecimal overdue = accountRules.getOverdueBalance(party, new Date());
+            Label overdueValue = create(overdue);
 
-        Label currentTitle = create("customer.account.current");
-        BigDecimal current = balance.subtract(overdue);
-        Label currentValue = create(current);
+            Label currentTitle = create("customer.account.current");
+            BigDecimal current = balance.subtract(overdue);
+            Label currentValue = create(current);
 
-        Label unbilledTitle = create("customer.account.unbilled");
-        BigDecimal unbilled = accountRules.getUnbilledAmount(party);
-        Label unbilledValue = create(unbilled);
+            Label unbilledTitle = create("customer.account.unbilled");
+            BigDecimal unbilled = accountRules.getUnbilledAmount(party);
+            Label unbilledValue = create(unbilled);
         
-        Label effectiveTitle = create("customer.account.effective");
-        BigDecimal effective = balance.add(unbilled);
-        Label effectiveValue = create(effective);
+            Label effectiveTitle = create("customer.account.effective");
+            BigDecimal effective = balance.add(unbilled);
+            Label effectiveValue = create(effective);
 
-        Grid Balgrid = GridFactory.create(2, balanceTitle, balanceValue,
-                                       overdueTitle, overdueValue,
-                                       currentTitle, currentValue,
-                                       unbilledTitle, unbilledValue,
-                                       effectiveTitle, effectiveValue);
-        column.add(Balgrid);
-        }  
+            Grid grid = GridFactory.create(2, balanceTitle, balanceValue,
+                                           overdueTitle, overdueValue,
+                                           currentTitle, currentValue,
+                                           unbilledTitle, unbilledValue,
+                                           effectiveTitle, effectiveValue);
+            column.add(grid);
+        }
         AlertSummary alerts = getAlertSummary(party);
         if (alerts != null) {
             column.add(ColumnFactory.create("Inset.Small", alerts.getComponent()));
