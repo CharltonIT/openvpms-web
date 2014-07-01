@@ -74,8 +74,7 @@ public class CustomerSummary extends PartySummary {
      * The account rules.
      */
     private CustomerAccountRules accountRules;
-    private Party practice;
-    private boolean hideAccountSummary;
+
 
     /**
      * Constructs a {@code CustomerSummary}.
@@ -102,11 +101,9 @@ public class CustomerSummary extends PartySummary {
         IMObjectReferenceViewer customerName = new IMObjectReferenceViewer(party.getObjectReference(),
                                                                            party.getName(), true, getContext());
         customerName.setStyleName("hyperlink-bold");
-        column.add(RowFactory.create("Inset.Small",
-                                     customerName.getComponent()));
-        Label customerID = LabelFactory.create();
-        customerID.setText(String.valueOf("ID: "+party.getId()));
-        column.add(RowFactory.create("Inset.Small", customerID));
+        column.add(RowFactory.create("Inset.Small", customerName.getComponent()));
+        Label customerId = createLabel("customer.id", party.getId());
+        column.add(RowFactory.create("Inset.Small", customerId));
         Label phone = LabelFactory.create();
         phone.setText(partyRules.getTelephone(party, true));
         column.add(RowFactory.create("Inset.Small", phone));
@@ -116,13 +113,13 @@ public class CustomerSummary extends PartySummary {
             column.add(RowFactory.create("Inset.Small", getEmail(email)));
         }
         final Context context = getContext();
-        Party practice=context.getPractice();
-        hideAccountSummary = true;
-        if (practice !=null){
+        Party practice = context.getPractice();
+        boolean accountSummary = true;
+        if (practice != null) {
             IMObjectBean bean = new IMObjectBean(practice);
-            hideAccountSummary = bean.getBoolean("hideCustomerBalanceWindow");
+            accountSummary = bean.getBoolean("showCustomerAccountSummary");
         }
-        if (!hideAccountSummary){
+        if (accountSummary) {
         Label balanceTitle = create("customer.account.balance");
         BigDecimal balance = accountRules.getBalance(party);
         Label balanceValue = create(balance);
@@ -143,12 +140,12 @@ public class CustomerSummary extends PartySummary {
         BigDecimal effective = balance.add(unbilled);
         Label effectiveValue = create(effective);
 
-        Grid Balgrid = GridFactory.create(2, balanceTitle, balanceValue,
+            Grid grid = GridFactory.create(2, balanceTitle, balanceValue,
                                        overdueTitle, overdueValue,
                                        currentTitle, currentValue,
                                        unbilledTitle, unbilledValue,
                                        effectiveTitle, effectiveValue);
-        column.add(Balgrid);
+            column.add(grid);
         }  
         AlertSummary alerts = getAlertSummary(party);
         if (alerts != null) {
@@ -204,6 +201,7 @@ public class CustomerSummary extends PartySummary {
         query.setStatus(ActStatus.IN_PROGRESS);
         return query.query();
     }
+
     /**
      * Returns a button to launch an {@link MailDialog} for a customer.
      *
