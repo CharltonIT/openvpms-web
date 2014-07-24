@@ -16,8 +16,17 @@
 
 package org.openvpms.web.workspace.reporting;
 
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Set;
+import javax.sql.DataSource;
 import org.openvpms.archetype.rules.doc.DocumentException;
+import static org.openvpms.archetype.rules.doc.DocumentException.ErrorCode.NotFound;
 import org.openvpms.archetype.rules.doc.DocumentTemplate;
+import org.openvpms.archetype.rules.doc.DocumentTemplatePrinter;
 import org.openvpms.component.business.domain.im.document.Document;
 import org.openvpms.component.business.service.archetype.ArchetypeServiceException;
 import org.openvpms.component.business.service.archetype.ArchetypeServiceHelper;
@@ -30,16 +39,6 @@ import org.openvpms.web.component.app.Context;
 import org.openvpms.web.component.im.report.Reporter;
 import org.openvpms.web.component.print.AbstractPrinter;
 import org.openvpms.web.system.ServiceHelper;
-
-import javax.sql.DataSource;
-import java.sql.Connection;
-import java.sql.SQLException;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
-
-import static org.openvpms.archetype.rules.doc.DocumentException.ErrorCode.NotFound;
 import static org.openvpms.web.workspace.reporting.SQLReportException.ErrorCode.ConnectionError;
 import static org.openvpms.web.workspace.reporting.SQLReportException.ErrorCode.NoQuery;
 
@@ -137,7 +136,7 @@ public class SQLReportPrinter extends AbstractPrinter {
         try {
             connection = getConnection();
             params.put(connectionName, connection);
-            report.print(params, getProperties(printer));
+            report.print(params, getProperties(printer, template, context));
         } finally {
             closeConnection(connection);
         }

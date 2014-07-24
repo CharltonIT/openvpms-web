@@ -27,9 +27,6 @@ import org.openvpms.report.openoffice.OpenOfficeHelper;
 import org.openvpms.web.component.app.Context;
 import org.openvpms.web.echo.servlet.DownloadServlet;
 
-import javax.print.attribute.standard.MediaTray;
-import javax.print.attribute.standard.Sides;
-
 
 /**
  * Abstract implementation of the {@link Printer} interface.
@@ -120,8 +117,11 @@ public abstract class AbstractPrinter implements Printer {
         if (template != null) {
             properties.setMediaSize(template.getMediaSize());
             properties.setOrientation(template.getOrientationRequested());
-            properties.setMediaTray(getMediaTray(template, printer, context));
-            properties.setSides(getDuplexing(template, printer, context));
+            DocumentTemplatePrinter relationship = getDocumentTemplatePrinter(template, printer, context);
+            if (relationship != null) {
+                properties.setMediaTray(relationship.getMediaTray());
+                properties.setSides(relationship.getSides());
+        }
         }
         return properties;
     }
@@ -136,8 +136,7 @@ public abstract class AbstractPrinter implements Printer {
     protected void print(Document document, String printer) {
         String mimeType = document.getMimeType();
         if (DocFormats.ODT_TYPE.equals(mimeType) || DocFormats.DOC_TYPE.equals(mimeType)) {
-            OpenOfficeHelper.getPrintService().print(document, printer, getCopies())
-                    ;
+            OpenOfficeHelper.getPrintService().print(document, getProperties(printer));
         } else {
             DownloadServlet.startDownload(document);
         }
@@ -182,23 +181,6 @@ public abstract class AbstractPrinter implements Printer {
             }
         }
         return null;
-    }
-
-    /**
-     * Helper to return the media tray for a document template for a particular printer for the current practice.
-     *
-     * @param template the template
-     * @param printer  the printer name
-     * @param context  the context
-     * @return the media tray for the template, or {@code null} if none is defined
-     */
-    protected MediaTray getMediaTray(DocumentTemplate template, String printer, Context context) {
-        DocumentTemplatePrinter relationship = getDocumentTemplatePrinter(template, printer, context);
-        return relationship != null ? relationship.getMediaTray() : null;
-    }
-    protected Sides getDuplexing(DocumentTemplate template, String printer, Context context) {
-        DocumentTemplatePrinter relationship = getDocumentTemplatePrinter(template, printer, context);
-        return relationship !=null ? relationship.getSides() : null;
     }
 
     /**
