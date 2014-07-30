@@ -176,7 +176,6 @@ public class PatientSummary extends PartySummary {
     }
 
     /**
-    /**
      * Returns a component indicating the patient is deceased.
      *
      * @return the component
