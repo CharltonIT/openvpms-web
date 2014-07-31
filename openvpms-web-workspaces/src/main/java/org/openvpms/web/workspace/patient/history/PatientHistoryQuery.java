@@ -23,14 +23,21 @@ import nextapp.echo2.app.Label;
 import nextapp.echo2.app.SelectField;
 import nextapp.echo2.app.event.ActionEvent;
 import org.apache.commons.lang.ArrayUtils;
+import org.apache.commons.lang.ObjectUtils;
 import org.openvpms.archetype.rules.finance.account.CustomerAccountArchetypes;
 import org.openvpms.archetype.rules.patient.InvestigationArchetypes;
 import org.openvpms.archetype.rules.patient.PatientArchetypes;
 import org.openvpms.component.business.domain.im.act.Act;
+import org.openvpms.component.business.domain.im.common.IMObjectReference;
 import org.openvpms.component.business.domain.im.party.Party;
+import org.openvpms.component.business.service.archetype.helper.ActBean;
+import org.openvpms.component.system.common.query.ArchetypeQuery;
 import org.openvpms.web.component.im.list.ShortNameListCellRenderer;
 import org.openvpms.web.component.im.list.ShortNameListModel;
 import org.openvpms.web.component.im.query.DateRangeActQuery;
+import org.openvpms.web.component.im.query.PageLocator;
+import org.openvpms.web.component.im.query.ParticipantConstraint;
+import org.openvpms.web.component.im.query.QueryHelper;
 import org.openvpms.web.component.im.relationship.RelationshipHelper;
 import org.openvpms.web.echo.event.ActionListener;
 import org.openvpms.web.echo.factory.ButtonFactory;
@@ -141,15 +148,6 @@ public class PatientHistoryQuery extends DateRangeActQuery<Act> {
     }
 
     /**
-     * Sets the state of the <em>allDates</em> checkbox, if present.
-     *
-     * @param selected the state of the <em>allDates</em> checkbox
-     */
-    public void setAllDates(boolean selected) {
-        getDateRange().setAllDates(selected);
-    }
-
-    /**
      * Determines if the visit items are being sorted ascending or descending.
      *
      * @param ascending if {@code true} visit items are to be sorted ascending; {@code false} if descending
@@ -178,6 +176,24 @@ public class PatientHistoryQuery extends DateRangeActQuery<Act> {
     public void setIncludeCharges(boolean include) {
         includeCharges.setSelected(include);
         updateSelectedShortNames();
+    }
+
+    /**
+     * Determines the page that an event falls on, excluding any date range constraints.
+     *
+     * @param object the event
+     * @return the page that the event would fall on, if present
+     */
+    public int getPage(Act object) {
+        int page = 0;
+        ActBean bean = new ActBean(object);
+        IMObjectReference patient = bean.getNodeParticipantRef("patient");
+        if (patient != null && ObjectUtils.equals(patient, getEntityId())) {
+            ArchetypeQuery query = new ArchetypeQuery(PatientArchetypes.CLINICAL_EVENT);
+            query.add(new ParticipantConstraint("patient", PatientArchetypes.PATIENT_PARTICIPATION, patient));
+            page = QueryHelper.getPage(object, query, getMaxResults(), "startTime", false, PageLocator.DATE_COMPARATOR);
+        }
+        return page;
     }
 
     /**
@@ -263,4 +279,5 @@ public class PatientHistoryQuery extends DateRangeActQuery<Act> {
         sort.setStyleName(style);
         sort.setToolTipText(toolTip);
     }
+
 }

@@ -31,6 +31,7 @@ import org.openvpms.component.system.common.query.JoinConstraint;
 import org.openvpms.component.system.common.query.ShortNameConstraint;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.Iterator;
 import java.util.List;
@@ -251,6 +252,25 @@ public class QueryHelper {
         linkJoin.add(targetJoin);
         acts.add(linkJoin);
         query.add(Constraints.sort(targetJoin.getAlias(), "name", ascending));
+    }
+
+    /**
+     * Returns the page that an object would fall on.
+     *
+     * @param object     the object to locate
+     * @param query      the query. Note that this is modified
+     * @param pageSize   the page size
+     * @param node       the object node to compare
+     * @param ascending  if {@code true} sort on {@code node} in ascending order, else use descending order
+     * @param comparator the comparator to compare the key and node values
+     * @return the page that an object would fall on, if present
+     */
+    public static <T extends Comparable> int getPage(IMObject object, ArchetypeQuery query, int pageSize,
+                                                     final String node, boolean ascending,
+                                                     final Comparator<T> comparator) {
+        PageLocator locator = new PageLocator(object, query, pageSize);
+        locator.addKey(node, ascending, comparator);
+        return locator.getPage();
     }
 
     /**

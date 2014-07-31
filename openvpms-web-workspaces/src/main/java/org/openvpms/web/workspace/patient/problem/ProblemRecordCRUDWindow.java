@@ -21,19 +21,27 @@ import nextapp.echo2.app.Label;
 import nextapp.echo2.app.RadioButton;
 import nextapp.echo2.app.button.ButtonGroup;
 import nextapp.echo2.app.event.ActionEvent;
+import org.apache.commons.lang.StringUtils;
 import org.openvpms.archetype.rules.patient.PatientArchetypes;
 import org.openvpms.component.business.domain.im.act.Act;
 import org.openvpms.component.business.domain.im.act.ActRelationship;
 import org.openvpms.component.business.domain.im.party.Party;
 import org.openvpms.component.business.service.archetype.helper.TypeHelper;
+import org.openvpms.component.system.common.exception.OpenVPMSException;
 import org.openvpms.component.system.common.query.ArchetypeQuery;
 import org.openvpms.component.system.common.query.Constraints;
 import org.openvpms.component.system.common.query.IMObjectQueryIterator;
 import org.openvpms.web.component.app.Context;
 import org.openvpms.web.component.im.archetype.Archetypes;
 import org.openvpms.web.component.im.edit.ActActions;
+import org.openvpms.web.component.im.print.IMObjectReportPrinter;
+import org.openvpms.web.component.im.print.InteractiveIMPrinter;
+import org.openvpms.web.component.im.report.ContextDocumentTemplateLocator;
+import org.openvpms.web.component.im.report.DocumentTemplateLocator;
 import org.openvpms.web.component.im.util.IMObjectHelper;
+import org.openvpms.web.component.im.util.LookupNameHelper;
 import org.openvpms.web.component.retry.Retryer;
+import org.openvpms.web.component.util.ErrorHelper;
 import org.openvpms.web.echo.button.ButtonSet;
 import org.openvpms.web.echo.dialog.ConfirmationDialog;
 import org.openvpms.web.echo.dialog.PopupDialog;
@@ -45,6 +53,7 @@ import org.openvpms.web.echo.factory.LabelFactory;
 import org.openvpms.web.echo.help.HelpContext;
 import org.openvpms.web.echo.style.Styles;
 import org.openvpms.web.resource.i18n.Messages;
+import org.openvpms.web.resource.i18n.format.DateFormatter;
 import org.openvpms.web.workspace.patient.PatientMedicalRecordLinker;
 import org.openvpms.web.workspace.patient.history.AbstractPatientHistoryCRUDWindow;
 
@@ -64,6 +73,11 @@ public class ProblemRecordCRUDWindow extends AbstractPatientHistoryCRUDWindow {
      * The current problem.
      */
     private Act problem;
+
+    /**
+     * The query, for printing.
+     */
+    private ProblemQuery query;
 
 
     /**
@@ -88,6 +102,8 @@ public class ProblemRecordCRUDWindow extends AbstractPatientHistoryCRUDWindow {
         if (object != null) {
             if (TypeHelper.isA(object, PatientArchetypes.CLINICAL_PROBLEM)) {
                 setProblem(object);
+            } else if (TypeHelper.isA(object, PatientArchetypes.CLINICAL_EVENT)) {
+                setProblem(null); // can't determine which problem to use.
             } else {
                 setProblem(getSource(object, PatientArchetypes.CLINICAL_PROBLEM));
             }
@@ -101,6 +117,50 @@ public class ProblemRecordCRUDWindow extends AbstractPatientHistoryCRUDWindow {
      */
     public void setProblem(Act problem) {
         this.problem = problem;
+    }
+
+    /**
+     * Returns the current patient clinical problem.
+     *
+     * @return the current problem. May be {@code null}
+     */
+    public Act getProblem() {
+        return problem;
+    }
+
+    /**
+     * Sets the current query, for printing.
+     *
+     * @param query the query
+     */
+    public void setQuery(ProblemQuery query) {
+        this.query = query;
+    }
+
+    /**
+     * Invoked when the 'print' button is pressed.
+     * This implementation prints the current summary list, rather than
+     * the selected item.
+     */
+    @Override
+    protected void onPrint() {
+        if (query != null) {
+            try {
+                Context context = getContext();
+                ProblemFilter filter = new ProblemFilter(query.getActItemShortNames(), query.isSortAscending());
+                Iterable<Act> summary = new ProblemHierarchyIterator(query, filter);
+                DocumentTemplateLocator locator = new ContextDocumentTemplateLocator(PatientArchetypes.CLINICAL_PROBLEM,
+                                                                                     context);
+                IMObjectReportPrinter<Act> printer = new IMObjectReportPrinter<Act>(summary, locator, context);
+                String title = Messages.get("patient.record.problem.print");
+                HelpContext help = getHelpContext().topic(PatientArchetypes.CLINICAL_PROBLEM + "/print");
+                InteractiveIMPrinter<Act> iPrinter = new InteractiveIMPrinter<Act>(title, printer, context, help);
+                iPrinter.setMailContext(getMailContext());
+                iPrinter.print();
+            } catch (OpenVPMSException exception) {
+                ErrorHelper.show(exception);
+            }
+        }
     }
 
     /**
@@ -157,7 +217,7 @@ public class ProblemRecordCRUDWindow extends AbstractPatientHistoryCRUDWindow {
             final Act event = getLatestEvent(getContext().getPatient());
             if (event != null) {
                 // there is an existing event for the patient. Prompt to add the problem to this visit, or a new one.
-                final VisitSelectionDialog dialog = new VisitSelectionDialog(event.getDescription());
+                final VisitSelectionDialog dialog = new VisitSelectionDialog(event, getHelpContext());
                 dialog.addWindowPaneListener(new PopupDialogListener() {
                     @Override
                     public void onOK() {
@@ -198,15 +258,17 @@ public class ProblemRecordCRUDWindow extends AbstractPatientHistoryCRUDWindow {
     @Override
     protected void onSaved(Act act, boolean isNew) {
         Act problem;
-        if (!TypeHelper.isA(act, PatientArchetypes.CLINICAL_PROBLEM)) {
-            problem = getProblem(act);
-        } else {
-            problem = act;
-            act = null;
+        if (!TypeHelper.isA(act, PatientArchetypes.CLINICAL_EVENT)) {
+            if (!TypeHelper.isA(act, PatientArchetypes.CLINICAL_PROBLEM)) {
+                problem = getProblem(act);
+            } else {
+                problem = act;
+                act = null;
+            }
+            Act event = getEvent();
+            PatientMedicalRecordLinker linker = createMedicalRecordLinker(event, problem, act);
+            Retryer.run(linker);
         }
-        Act event = getEvent();
-        PatientMedicalRecordLinker linker = createMedicalRecordLinker(event, problem, act);
-        Retryer.run(linker);
         super.onSaved(act, isNew);
     }
 
@@ -273,18 +335,6 @@ public class ProblemRecordCRUDWindow extends AbstractPatientHistoryCRUDWindow {
         public static final ProblemActions INSTANCE = new ProblemActions();
 
         /**
-         * Determines if an act can be edited.
-         *
-         * @param act the act to check
-         * @return {@code true}
-         */
-        @Override
-        public boolean canEdit(Act act) {
-            // @todo fix when statuses are sorted out
-            return true;
-        }
-
-        /**
          * Determines if an act can be deleted.
          *
          * @param act the act to check
@@ -307,10 +357,11 @@ public class ProblemRecordCRUDWindow extends AbstractPatientHistoryCRUDWindow {
         /**
          * Constructs a {@link VisitSelectionDialog}.
          *
-         * @param visit the existing visit description
+         * @param event the existing event
+         * @param help  the help context
          */
-        public VisitSelectionDialog(String visit) {
-            super(Messages.get("patient.record.problem.selectVisit.title"), OK_CANCEL);
+        public VisitSelectionDialog(Act event, HelpContext help) {
+            super(Messages.get("patient.record.problem.selectVisit.title"), OK_CANCEL, help.subtopic("selectVisit"));
             setModal(true);
             ButtonGroup group = new ButtonGroup();
             ActionListener listener = new ActionListener() {
@@ -319,7 +370,7 @@ public class ProblemRecordCRUDWindow extends AbstractPatientHistoryCRUDWindow {
                 }
             };
             RadioButton existingVisit = ButtonFactory.create(null, group, listener);
-            existingVisit.setText(visit);
+            existingVisit.setText(getEventDescription(event));
             existingVisit.setSelected(true);
             newVisit = ButtonFactory.create("patient.record.problem.selectVisit.new", group, listener);
             existingVisit.setGroup(group);
@@ -338,6 +389,30 @@ public class ProblemRecordCRUDWindow extends AbstractPatientHistoryCRUDWindow {
          */
         public boolean createVisit() {
             return newVisit.isSelected();
+        }
+
+        /**
+         * Formats a clinical event description.
+         *
+         * @param act the event
+         * @return the description
+         */
+        private String getEventDescription(Act act) {
+            String result;
+            String title = act.getTitle();
+            String reason = LookupNameHelper.getName(act, "reason");
+            String date = DateFormatter.formatDate(act.getActivityStartTime(), false);
+            if (!StringUtils.isEmpty(reason) && !StringUtils.isEmpty(title)) {
+                result = Messages.format("patient.record.problem.selectVisit.datedReasonAndSummary", date, reason,
+                                         title);
+            } else if (!StringUtils.isEmpty(reason)) {
+                result = Messages.format("patient.record.problem.selectVisit.datedReason", date, reason);
+            } else if (!StringUtils.isEmpty(title)) {
+                result = Messages.format("patient.record.problem.selectVisit.datedReason", date, title);
+            } else {
+                result = date;
+            }
+            return result;
         }
     }
 }

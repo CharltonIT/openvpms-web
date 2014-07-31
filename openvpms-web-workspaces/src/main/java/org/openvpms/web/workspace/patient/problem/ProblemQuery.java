@@ -21,15 +21,21 @@ import nextapp.echo2.app.Component;
 import nextapp.echo2.app.Label;
 import nextapp.echo2.app.SelectField;
 import nextapp.echo2.app.event.ActionEvent;
+import org.apache.commons.collections.ComparatorUtils;
 import org.openvpms.archetype.rules.patient.InvestigationArchetypes;
 import org.openvpms.archetype.rules.patient.PatientArchetypes;
 import org.openvpms.component.business.domain.im.act.Act;
+import org.openvpms.component.business.domain.im.common.IMObjectReference;
 import org.openvpms.component.business.domain.im.party.Party;
+import org.openvpms.component.business.service.archetype.helper.ActBean;
+import org.openvpms.component.system.common.query.ArchetypeQuery;
 import org.openvpms.component.system.common.query.NodeSortConstraint;
 import org.openvpms.component.system.common.query.SortConstraint;
 import org.openvpms.web.component.im.list.ShortNameListCellRenderer;
 import org.openvpms.web.component.im.list.ShortNameListModel;
 import org.openvpms.web.component.im.query.DateRangeActQuery;
+import org.openvpms.web.component.im.query.PageLocator;
+import org.openvpms.web.component.im.query.ParticipantConstraint;
 import org.openvpms.web.component.im.relationship.RelationshipHelper;
 import org.openvpms.web.echo.event.ActionListener;
 import org.openvpms.web.echo.factory.ButtonFactory;
@@ -86,16 +92,14 @@ public class ProblemQuery extends DateRangeActQuery<Act> {
      */
     private static final String[] SHORT_NAMES = new String[]{PatientArchetypes.CLINICAL_PROBLEM};
 
-
     /**
      * Sort such that Unresolved acts are displayed first, ordered on most recent timestamp.
      */
-    private static final SortConstraint[] SORT_CONSTRAINTS = {
+    private static final SortConstraint[] SORT = {
             new NodeSortConstraint("status", false),
             new NodeSortConstraint("startTime", false),
             new NodeSortConstraint("id")
     };
-
 
     /**
      * Constructs a {@link ProblemQuery}.
@@ -118,7 +122,7 @@ public class ProblemQuery extends DateRangeActQuery<Act> {
         shortNameSelector.addActionListener(listener);
         shortNameSelector.setCellRenderer(new ShortNameListCellRenderer());
         setAuto(true);
-        setDefaultSortConstraint(SORT_CONSTRAINTS);
+        setDefaultSortConstraint(SORT);
     }
 
     /**
@@ -131,18 +135,9 @@ public class ProblemQuery extends DateRangeActQuery<Act> {
     }
 
     /**
-     * Sets the state of the <em>allDates</em> checkbox, if present.
+     * Determines if the problem items are being sorted ascending or descending.
      *
-     * @param selected the state of the <em>allDates</em> checkbox
-     */
-    public void setAllDates(boolean selected) {
-        getDateRange().setAllDates(selected);
-    }
-
-    /**
-     * Determines if the visit items are being sorted ascending or descending.
-     *
-     * @param ascending if {@code true} visit items are to be sorted ascending; {@code false} if descending
+     * @param ascending if {@code true} problem items are to be sorted ascending; {@code false} if descending
      */
     public void setSortAscending(boolean ascending) {
         sortAscending = ascending;
@@ -152,12 +147,33 @@ public class ProblemQuery extends DateRangeActQuery<Act> {
     }
 
     /**
-     * Determines if the visit items are being sorted ascending or descending.
+     * Determines if the problem items are being sorted ascending or descending.
      *
-     * @return {@code true} if visit items are being sorted ascending; {@code false} if descending
+     * @return {@code true} if problem items are being sorted ascending; {@code false} if descending
      */
     public boolean isSortAscending() {
         return sortAscending;
+    }
+
+    /**
+     * Determines the page that a problem falls on, excluding any date range constraints.
+     *
+     * @param problem the problem
+     * @return the page that the problem would fall on, if present
+     */
+    public int getPage(Act problem) {
+        int page = 0;
+        ActBean bean = new ActBean(problem);
+        IMObjectReference patient = bean.getNodeParticipantRef("patient");
+        if (patient != null) {
+            ArchetypeQuery query = new ArchetypeQuery(PatientArchetypes.CLINICAL_PROBLEM);
+            query.add(new ParticipantConstraint("patient", PatientArchetypes.PATIENT_PARTICIPATION, patient));
+            PageLocator locator = new PageLocator(problem, query, getMaxResults());
+            locator.addKey("status", false, ComparatorUtils.naturalComparator());
+            locator.addKey("startTime", false, PageLocator.DATE_COMPARATOR);
+            page = locator.getPage();
+        }
+        return page;
     }
 
     /**

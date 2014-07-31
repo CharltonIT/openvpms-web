@@ -26,6 +26,7 @@ import nextapp.echo2.app.Insets;
 import nextapp.echo2.app.Label;
 import nextapp.echo2.app.Row;
 import nextapp.echo2.app.layout.RowLayoutData;
+import nextapp.echo2.app.layout.TableLayoutData;
 import nextapp.echo2.app.table.DefaultTableColumnModel;
 import nextapp.echo2.app.table.TableColumn;
 import nextapp.echo2.app.table.TableColumnModel;
@@ -52,9 +53,10 @@ import org.openvpms.web.component.im.doc.DocumentViewer;
 import org.openvpms.web.component.im.layout.LayoutContext;
 import org.openvpms.web.component.im.table.AbstractIMObjectTableModel;
 import org.openvpms.web.component.im.util.IMObjectHelper;
+import org.openvpms.web.component.im.util.LookupNameHelper;
+import org.openvpms.web.component.im.view.IMObjectReferenceViewer;
 import org.openvpms.web.component.util.ErrorHelper;
 import org.openvpms.web.echo.factory.ComponentFactory;
-import org.openvpms.web.echo.factory.LabelFactory;
 import org.openvpms.web.echo.factory.RowFactory;
 import org.openvpms.web.echo.style.Styles;
 import org.openvpms.web.echo.style.UserStyleSheets;
@@ -78,6 +80,11 @@ import java.util.Map;
  * @author Tim Anderson
  */
 public abstract class AbstractPatientHistoryTableModel extends AbstractIMObjectTableModel<Act> {
+
+    /**
+     * Path of the selected parent act icon.
+     */
+    protected static final String SELECTED_ICON = "../images/navigation/next.png";
 
     /**
      * The parent act short name.
@@ -154,11 +161,6 @@ public abstract class AbstractPatientHistoryTableModel extends AbstractIMObjectT
      * Column used to add a spacer to differentiate the selected row and the coloured visit items.
      */
     private static final int SPACER_COLUMN = 2;
-
-    /**
-     * Path of the selected parent act icon.
-     */
-    private static final String SELECTED_ICON = "../images/navigation/next.png";
 
     /**
      * The logger.
@@ -298,14 +300,14 @@ public abstract class AbstractPatientHistoryTableModel extends AbstractIMObjectT
      */
     protected Object getValue(Act act, TableColumn column, int row) {
         Object result = null;
+        ActBean bean = new ActBean(act);
         switch (column.getModelIndex()) {
             case SELECTION_COLUMN:
                 if (row == selectedParent) {
-                    return new Label(new HttpImageReference(SELECTED_ICON));
+                    result = getSelectionIndicator();
                 }
                 break;
             case SUMMARY_COLUMN:
-                ActBean bean = new ActBean(act);
                 try {
                     if (TypeHelper.isA(act, parentShortName)) {
                         result = formatParent(bean, row);
@@ -328,13 +330,7 @@ public abstract class AbstractPatientHistoryTableModel extends AbstractIMObjectT
      * @return a component representing the act
      * @throws OpenVPMSException for any error
      */
-    protected Component formatParent(ActBean bean, int row) {
-        String date = formatDateRange(bean);
-        String text = formatParentText(bean, row);
-        Label summary = LabelFactory.create(null, Styles.BOLD);
-        summary.setText(Messages.format("patient.record.summary.datedTitle", date, text));
-        return summary;
-    }
+    protected abstract Component formatParent(ActBean bean, int row);
 
     /**
      * Formats an act date range.
@@ -367,14 +363,14 @@ public abstract class AbstractPatientHistoryTableModel extends AbstractIMObjectT
     /**
      * Formats the text for a parent act.
      *
-     * @param bean the act
-     * @param row  the current row
+     * @param bean   the act
+     * @param reason the reason. May be {@code null}
+     * @param row    the current row
      * @return the formatted text
      */
-    protected String formatParentText(ActBean bean, int row) {
+    protected String formatParentText(ActBean bean, String reason, int row) {
         Act act = bean.getAct();
         String clinician;
-        String reason = getReason(bean.getAct());
         if (StringUtils.isEmpty(reason)) {
             reason = Messages.get("patient.record.summary.reason.none");
         }
@@ -385,13 +381,35 @@ public abstract class AbstractPatientHistoryTableModel extends AbstractIMObjectT
     }
 
     /**
+     * Formats the text for a clinical event.
+     *
+     * @param bean the act
+     * @param row  the current row
+     * @return the formatted text
+     */
+    protected String formatEventText(ActBean bean, int row) {
+        Act act = bean.getAct();
+        String reason = getReason(bean.getAct());
+        String title = act.getTitle();
+        if (!StringUtils.isEmpty(reason) && !StringUtils.isEmpty(title)) {
+            String text = reason + " - " + title;
+            return formatParentText(bean, text, row);
+        } else if (!StringUtils.isEmpty(reason)) {
+            return formatParentText(bean, reason, row);
+        } else if (!StringUtils.isEmpty(title)) {
+            return formatParentText(bean, title, row);
+        }
+        return formatParentText(bean, null, row);
+    }
+
+    /**
      * Returns the reason for the parent act.
      *
      * @param act the act
      * @return the reason. May be {@code null}
      */
     protected String getReason(Act act) {
-        return act.getReason();
+        return LookupNameHelper.getName(act, "reason");
     }
 
     /**
@@ -445,7 +463,7 @@ public abstract class AbstractPatientHistoryTableModel extends AbstractIMObjectT
     /**
      * Returns a component for the act type.
      * <p/>
-     * This indents the type depending on the acts depth in the act hierarchy.
+     * This indents the type depending on the act's depth in the act hierarchy.
      *
      * @param bean the act
      * @param row  the current row
@@ -464,6 +482,23 @@ public abstract class AbstractPatientHistoryTableModel extends AbstractIMObjectT
             label.setWidth(new Extent(typeWidth - inset));
         }
         return result;
+    }
+
+    /**
+     * Returns a hyperlinked type component.
+     *
+     * @param bean the act
+     * @param row  the current row
+     * @return a component representing the act type
+     */
+    protected Component getHyperlinkedType(ActBean bean, int row) {
+        LayoutContext context = getContext();
+        IMObjectReferenceViewer viewer = new IMObjectReferenceViewer(bean.getObject().getObjectReference(),
+                                                                     getTypeName(bean, row),
+                                                                     context.getContextSwitchListener(),
+                                                                     context.getContext());
+        viewer.setWidth(typeWidth);
+        return viewer.getComponent();
     }
 
     /**
@@ -649,6 +684,19 @@ public abstract class AbstractPatientHistoryTableModel extends AbstractIMObjectT
     protected String getValue(ActBean bean, String node, String message) {
         String value = bean.getString(node);
         return (!StringUtils.isEmpty(value)) ? value : Messages.get(message);
+    }
+
+    /**
+     * Returns a component indicating that a row has been selected.
+     *
+     * @return the component
+     */
+    protected Component getSelectionIndicator() {
+        Label label = new Label(new HttpImageReference(SELECTED_ICON));
+        TableLayoutData layout = new TableLayoutData();
+        layout.setAlignment(Alignment.ALIGN_TOP);
+        label.setLayoutData(layout);
+        return label;
     }
 
     /**

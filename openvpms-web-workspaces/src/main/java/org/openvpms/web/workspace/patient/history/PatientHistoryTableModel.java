@@ -26,6 +26,7 @@ import org.openvpms.component.business.domain.im.act.FinancialAct;
 import org.openvpms.component.business.domain.im.common.IMObjectReference;
 import org.openvpms.component.business.service.archetype.helper.ActBean;
 import org.openvpms.component.business.service.archetype.helper.TypeHelper;
+import org.openvpms.component.system.common.exception.OpenVPMSException;
 import org.openvpms.component.system.common.query.ArchetypeQuery;
 import org.openvpms.component.system.common.query.Constraints;
 import org.openvpms.component.system.common.query.NodeSelectConstraint;
@@ -64,6 +65,26 @@ public class PatientHistoryTableModel extends AbstractPatientHistoryTableModel {
     }
 
     /**
+     * Returns a component for the act type.
+     * <p/>
+     * This indents the type depending on the acts depth in the act hierarchy.
+     *
+     * @param bean the act
+     * @param row  the current row
+     * @return a component representing the act type
+     */
+    @Override
+    protected Component getType(ActBean bean, int row) {
+        Component result;
+        if (bean.isA(PatientArchetypes.CLINICAL_PROBLEM)) {
+            result = getHyperlinkedType(bean, row);
+        } else {
+            result = super.getType(bean, row);
+        }
+        return result;
+    }
+
+    /**
      * Returns the name of an act to display in the Type column.
      *
      * @param bean the act
@@ -79,6 +100,23 @@ public class PatientHistoryTableModel extends AbstractPatientHistoryTableModel {
             }
         }
         return result;
+    }
+
+    /**
+     * Returns a component for a parent act.
+     *
+     * @param bean the parent act
+     * @param row  the current row
+     * @return a component representing the act
+     * @throws OpenVPMSException for any error
+     */
+    @Override
+    protected Component formatParent(ActBean bean, int row) {
+        String date = formatDateRange(bean);
+        String text = formatEventText(bean, row);
+        Label summary = LabelFactory.create(null, Styles.BOLD);
+        summary.setText(Messages.format("patient.record.summary.datedTitle", date, text));
+        return summary;
     }
 
     /**

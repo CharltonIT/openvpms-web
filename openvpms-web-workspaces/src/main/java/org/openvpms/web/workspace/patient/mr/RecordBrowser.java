@@ -21,10 +21,13 @@ import org.openvpms.archetype.rules.patient.PatientArchetypes;
 import org.openvpms.archetype.rules.patient.reminder.ReminderArchetypes;
 import org.openvpms.component.business.domain.im.act.Act;
 import org.openvpms.component.business.domain.im.act.DocumentAct;
+import org.openvpms.component.business.domain.im.common.IMObject;
 import org.openvpms.component.business.domain.im.party.Party;
+import org.openvpms.component.business.service.archetype.helper.TypeHelper;
 import org.openvpms.component.system.common.query.NodeSortConstraint;
 import org.openvpms.component.system.common.query.SortConstraint;
 import org.openvpms.web.component.app.Context;
+import org.openvpms.web.component.app.ContextSwitchListener;
 import org.openvpms.web.component.im.archetype.Archetypes;
 import org.openvpms.web.component.im.layout.DefaultLayoutContext;
 import org.openvpms.web.component.im.layout.LayoutContext;
@@ -45,17 +48,19 @@ import org.openvpms.web.workspace.patient.history.PatientHistoryQuery;
 import org.openvpms.web.workspace.patient.problem.ProblemBrowser;
 import org.openvpms.web.workspace.patient.problem.ProblemQuery;
 import org.openvpms.web.workspace.patient.problem.ProblemRecordCRUDWindow;
+import org.openvpms.web.workspace.patient.visit.VisitEditor;
 
 import static org.openvpms.archetype.rules.patient.PatientArchetypes.PATIENT_PARTICIPATION;
 
 
 /**
  * Patient record browser.
+ * <p/>
+ * TODO - refactor along the lines of {@link VisitEditor}.
  *
  * @author Tim Anderson
  */
 public class RecordBrowser extends TabbedBrowser<Act> {
-
 
     /**
      * The document archetypes.
@@ -155,6 +160,16 @@ public class RecordBrowser extends TabbedBrowser<Act> {
         prescriptionArchetypes = Archetypes.create(PatientArchetypes.PRESCRIPTION, Act.class);
 
         LayoutContext layout = new DefaultLayoutContext(context, help);
+        layout.setContextSwitchListener(new ContextSwitchListener() {
+            @Override
+            public void switchTo(IMObject object) {
+                followHyperlink(object);
+            }
+
+            @Override
+            public void switchTo(String shortName) {
+            }
+        });
 
         history = createHistoryBrowser(query, layout);
         historyIndex = addBrowser(Messages.get("button.summary"), history);
@@ -165,6 +180,20 @@ public class RecordBrowser extends TabbedBrowser<Act> {
         chargesIndex = addBrowser(Messages.get("button.charges"), createChargeBrowser(patient, layout));
         prescriptionIndex = addBrowser(Messages.get("button.prescriptions"),
                                        createPrescriptionBrowser(patient, layout));
+    }
+
+    /**
+     * Displays the history tab.
+     */
+    public void showHistory() {
+        setSelectedBrowser(historyIndex);
+    }
+
+    /**
+     * Displays the problems tab.
+     */
+    public void showProblems() {
+        setSelectedBrowser(problemIndex);
     }
 
     /**
@@ -230,6 +259,15 @@ public class RecordBrowser extends TabbedBrowser<Act> {
     }
 
     /**
+     * Returns the problems browser.
+     *
+     * @return te problems browser
+     */
+    public ProblemBrowser getProblems() {
+        return problems;
+    }
+
+    /**
      * Creates a patient history browser.
      *
      * @param query  the history query
@@ -262,7 +300,8 @@ public class RecordBrowser extends TabbedBrowser<Act> {
      * @return a new {@link CRUDWindow}
      */
     protected ProblemBrowser createProblemBrowser(Party patient, LayoutContext layout) {
-        return new ProblemBrowser(new ProblemQuery(patient), layout);
+        ProblemQuery query = PatientQueryFactory.createProblemQuery(patient, layout.getContext().getPractice());
+        return new ProblemBrowser(query, layout);
     }
 
     /**
@@ -275,6 +314,7 @@ public class RecordBrowser extends TabbedBrowser<Act> {
     protected CRUDWindow<Act> createProblemRecordCRUDWindow(Context context, HelpContext help) {
         ProblemRecordCRUDWindow result = new ProblemRecordCRUDWindow(context, help);
         result.setEvent(getEvent(null));
+        result.setQuery(problems.getQuery());
         return result;
     }
 
@@ -379,6 +419,45 @@ public class RecordBrowser extends TabbedBrowser<Act> {
      */
     protected CRUDWindow<Act> createPrescriptionCRUDWindow(Context context, HelpContext help) {
         return new PatientPrescriptionCRUDWindow(prescriptionArchetypes, context, help.subtopic("prescription"));
+    }
+
+    /**
+     * Follow a hyperlink.
+     * <p/>
+     * If the object is a:
+     * <ul>
+     * <li>problem, the Problems tab will be shown, and the problem selected</li>
+     * <li>event, the Summary tab will be shown, and the event selected</li>
+     * </ul>
+     *
+     * @param object the object to display
+     */
+    protected void followHyperlink(IMObject object) {
+        if (TypeHelper.isA(object, PatientArchetypes.CLINICAL_PROBLEM)) {
+            showProblem((Act) object);
+        } else if (TypeHelper.isA(object, PatientArchetypes.CLINICAL_EVENT)) {
+            showEvent((Act) object);
+        }
+    }
+
+    /**
+     * Switches to the history browser, selecting an event.
+     *
+     * @param object the event
+     */
+    private void showEvent(Act object) {
+        showHistory();
+        history.setSelected(object, true);
+    }
+
+    /**
+     * Switches to the problem browser, selecting a problem.
+     *
+     * @param object the problem
+     */
+    private void showProblem(Act object) {
+        showProblems();
+        problems.setSelected(object, true);
     }
 
 }

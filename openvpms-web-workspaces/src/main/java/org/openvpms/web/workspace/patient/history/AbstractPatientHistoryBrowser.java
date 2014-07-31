@@ -20,8 +20,8 @@ import nextapp.echo2.app.event.ActionEvent;
 import org.openvpms.component.business.domain.im.act.Act;
 import org.openvpms.component.business.service.archetype.helper.TypeHelper;
 import org.openvpms.web.component.im.layout.LayoutContext;
+import org.openvpms.web.component.im.query.DateRangeActQuery;
 import org.openvpms.web.component.im.query.IMObjectTableBrowser;
-import org.openvpms.web.component.im.query.Query;
 import org.openvpms.web.component.im.table.IMTable;
 import org.openvpms.web.component.im.table.IMTableModel;
 import org.openvpms.web.component.im.table.PagedIMTable;
@@ -44,7 +44,7 @@ public abstract class AbstractPatientHistoryBrowser extends IMObjectTableBrowser
      * @param model   the table model
      * @param context the layout context
      */
-    public AbstractPatientHistoryBrowser(Query<Act> query, AbstractPatientHistoryTableModel model,
+    public AbstractPatientHistoryBrowser(DateRangeActQuery<Act> query, AbstractPatientHistoryTableModel model,
                                          LayoutContext context) {
         super(query, model, context);
     }
@@ -52,12 +52,39 @@ public abstract class AbstractPatientHistoryBrowser extends IMObjectTableBrowser
     /**
      * Select an object.
      *
-     * @param object the object to select
+     * @param object the object to select. May be {@code null} to deselect the current selection
+     * @return {@code true} if the object was selected, {@code false} if it doesn't exist in the current view
      */
     @Override
-    public void setSelected(Act object) {
-        super.setSelected(object);
+    public boolean setSelected(Act object) {
+        return setSelected(object, false);
+    }
+
+    /**
+     * Select an object.
+     *
+     * @param object the object to select. May be {@code null} to deselect the current selection
+     * @param find   if {@code true}, page through the result set looking for the object. Note: only works for parent
+     *               acts
+     * @return {@code true} if the object was selected, {@code false} if it doesn't exist in the current view
+     */
+    public boolean setSelected(Act object, boolean find) {
+        boolean result = super.setSelected(object);
+        if (!result && find) {
+            int page = getPage(object);
+            DateRangeActQuery<Act> query = getQuery();
+            if (!query.getAllDates()) {
+                // widen the query
+                query.setAllDates(true);
+                query();
+            }
+
+            if (getTable().getModel().setPage(page)) {
+                result = super.setSelected(object);
+            }
+        }
         onSelected();
+        return result;
     }
 
     /**
@@ -127,6 +154,16 @@ public abstract class AbstractPatientHistoryBrowser extends IMObjectTableBrowser
     public abstract Act getEvent(Act act);
 
     /**
+     * Returns the query.
+     *
+     * @return the query
+     */
+    @Override
+    public DateRangeActQuery<Act> getQuery() {
+        return (DateRangeActQuery<Act>) super.getQuery();
+    }
+
+    /**
      * Creates a new paged table.
      *
      * @param model the table model
@@ -164,6 +201,16 @@ public abstract class AbstractPatientHistoryBrowser extends IMObjectTableBrowser
     protected AbstractPatientHistoryTableModel getTableModel() {
         return (AbstractPatientHistoryTableModel) super.getTableModel();
     }
+
+    /**
+     * Determines the page that an object appears on.
+     * <p/>
+     * Note: this only applies to parent objects.
+     *
+     * @param object the object
+     * @return the page
+     */
+    protected abstract int getPage(Act object);
 
     /**
      * Invoked when an act is selected. Highlights the associated parent act.
