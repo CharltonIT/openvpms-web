@@ -31,6 +31,7 @@ import org.openvpms.web.component.im.product.FixedPriceEditor;
 import org.openvpms.web.component.im.view.ComponentState;
 import org.openvpms.web.component.property.Property;
 import org.openvpms.web.component.util.ErrorHelper;
+import org.openvpms.web.system.ServiceHelper;
 
 import java.math.BigDecimal;
 import java.util.Date;
@@ -53,6 +54,10 @@ public abstract class PriceActItemEditor extends ActItemEditor {
      */
     private ProductPrice unitProductPrice;
 
+    /**
+     * The practice.
+     */
+    private final Party practice;
 
     /**
      * Constructs a {@link PriceActItemEditor}.
@@ -68,6 +73,7 @@ public abstract class PriceActItemEditor extends ActItemEditor {
         Product product = getProduct();
         fixedEditor = new FixedPriceEditor(fixedPrice, getPricingLocation(), context);
         fixedEditor.setProduct(product);
+        practice = context.getContext().getPractice();
     }
 
     /**
@@ -132,13 +138,64 @@ public abstract class PriceActItemEditor extends ActItemEditor {
     }
 
     /**
+     * Returns the fixed cost.
+     *
+     * @return the fixed cost
+     */
+    protected BigDecimal getFixedCost() {
+        return getProperty("fixedCost").getBigDecimal(BigDecimal.ZERO);
+    }
+
+    /**
+     * Returns the unit cost.
+     *
+     * @return the unit cost
+     */
+    protected BigDecimal getUnitCost() {
+        return getProperty("unitCost").getBigDecimal(BigDecimal.ZERO);
+    }
+
+    /**
+     * Returns the maximum discount allowed on the fixed price.
+     *
+     * @return the maximum discount
+     */
+    protected BigDecimal getFixedPriceMaxDiscount() {
+        Product product = getProduct();
+        BigDecimal result;
+        if (product != null) {
+            ProductPrice price = getFixedProductPrice(product);
+            result = getMaxDiscount(price);
+        } else {
+            result = BigDecimal.ZERO;
+        }
+        return result;
+    }
+
+    /**
+     * Returns the maximum discount allowed on the unit price.
+     *
+     * @return the maximum discount
+     */
+    protected BigDecimal getUnitPriceMaxDiscount() {
+        Product product = getProduct();
+        BigDecimal result;
+        if (product != null) {
+            ProductPrice price = getUnitProductPrice(product);
+            result = getMaxDiscount(price);
+        } else {
+            result = BigDecimal.ZERO;
+        }
+        return result;
+    }
+
+    /**
      * Returns the fixed price.
      *
      * @return the fixed price
      */
     protected BigDecimal getFixedPrice() {
-        BigDecimal value = (BigDecimal) getProperty("fixedPrice").getValue();
-        return (value != null) ? value : BigDecimal.ZERO;
+        return getProperty("fixedPrice").getBigDecimal(BigDecimal.ZERO);
     }
 
     /**
@@ -169,22 +226,24 @@ public abstract class PriceActItemEditor extends ActItemEditor {
         Party patient = getPatient();
         Product product = getProduct();
 
-        if (customer != null && product != null
-            && !TypeHelper.isA(product, ProductArchetypes.TEMPLATE)) {
+        if (customer != null && product != null && !TypeHelper.isA(product, ProductArchetypes.TEMPLATE)) {
+            BigDecimal fixedCost = getFixedCost();
+            BigDecimal unitCost = getUnitCost();
             BigDecimal fixedPrice = getFixedPrice();
             BigDecimal unitPrice = getUnitPrice();
             BigDecimal quantity = getQuantity();
-            DiscountRules rules = new DiscountRules();
+            BigDecimal fixedPriceMaxDiscount = getFixedPriceMaxDiscount();
+            BigDecimal unitPriceMaxDiscount = getUnitPriceMaxDiscount();
+            DiscountRules rules = new DiscountRules(ServiceHelper.getArchetypeService(),
+                                                    ServiceHelper.getLookupService());
             Date startTime = getStartTime();
             if (startTime == null) {
                 Act parent = (Act) getParent();
                 startTime = parent.getActivityStartTime();
             }
-            ProductPrice fixedProductPrice = getFixedProductPrice(product);
-            ProductPrice unitProductPrice = getUnitProductPrice(product);
-            amount = rules.calculateDiscount(startTime, customer, patient, product, fixedPrice,
-                                             unitPrice, quantity, getMaxDiscount(fixedProductPrice),
-                                             getMaxDiscount(unitProductPrice));
+            amount = rules.calculateDiscount(startTime, practice, customer, patient, product,
+                                             fixedCost, unitCost, fixedPrice, unitPrice, quantity,
+                                             fixedPriceMaxDiscount, unitPriceMaxDiscount);
         }
         return amount;
     }
