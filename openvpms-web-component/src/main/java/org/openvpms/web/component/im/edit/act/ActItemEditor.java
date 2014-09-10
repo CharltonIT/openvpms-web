@@ -363,7 +363,16 @@ public abstract class ActItemEditor extends AbstractActEditor {
     protected BigDecimal getMaxDiscount(ProductPrice price) {
         return (price != null) ? rules.getMaxDiscount(price) : ProductPriceRules.DEFAULT_MAX_DISCOUNT;
     }
-
+    /**
+     * Returns the cost for a product 
+     * 
+     * @param price the price. May be {@code null}
+     * @return the cost for a product.
+     */
+    
+    protected BigDecimal getCostPrice(ProductPrice price) {
+        return (price != null) ? rules.getCostPrice(price) : BigDecimal.ZERO;
+    }
     /**
      * Returns the product editor.
      *

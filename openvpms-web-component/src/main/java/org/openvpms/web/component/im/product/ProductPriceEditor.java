@@ -16,6 +16,7 @@
 
 package org.openvpms.web.component.im.product;
 
+import java.math.BigDecimal;
 import org.openvpms.archetype.rules.math.Currency;
 import org.openvpms.archetype.rules.product.ProductPriceRules;
 import org.openvpms.component.business.domain.im.party.Party;
@@ -31,8 +32,6 @@ import org.openvpms.web.component.property.ModifiableListener;
 import org.openvpms.web.component.property.Property;
 import org.openvpms.web.component.util.ErrorHelper;
 import org.openvpms.web.system.ServiceHelper;
-
-import java.math.BigDecimal;
 
 
 /**
@@ -57,6 +56,10 @@ public class ProductPriceEditor extends AbstractIMObjectEditor {
      * The markup property listener.
      */
     private final ModifiableListener markupListener;
+    /**
+     * The discount property listener
+     */
+    private final ModifiableListener discountListener;
 
     /**
      * Product price calculator.
@@ -94,6 +97,12 @@ public class ProductPriceEditor extends AbstractIMObjectEditor {
             }
         };
         getProperty("price").addModifiableListener(priceListener);
+        discountListener = new ModifiableListener() {
+            public void modified(Modifiable modifiable) {
+                checkDiscount();
+            }
+        };
+        getProperty("maxDiscount").addModifiableListener(discountListener);
         rules = ServiceHelper.getBean(ProductPriceRules.class);
     }
 
@@ -108,20 +117,23 @@ public class ProductPriceEditor extends AbstractIMObjectEditor {
         Property cost = getProperty("cost");
         Property markup = getProperty("markup");
         Property price = getProperty("price");
+        Property discount = getProperty("maxdiscount");
         try {
             cost.removeModifiableListener(costListener);
             markup.removeModifiableListener(markupListener);
             price.removeModifiableListener(priceListener);
+            discount.removeModifiableListener(discountListener);
             price.refresh();
         } finally {
             cost.addModifiableListener(costListener);
             markup.addModifiableListener(markupListener);
             price.addModifiableListener(priceListener);
+            discount.addModifiableListener(discountListener);
         }
     }
 
     /**
-     * Updates the price.
+     * Updates the price and the maximum discount.
      */
     private void updatePrice() {
         try {
@@ -129,13 +141,17 @@ public class ProductPriceEditor extends AbstractIMObjectEditor {
             property.removeModifiableListener(priceListener);
             property.setValue(calculatePrice());
             property.addModifiableListener(priceListener);
+            Property maxDiscount = getProperty("maxDiscount");
+            maxDiscount.removeModifiableListener(discountListener);
+            maxDiscount.setValue(calculateDiscount(maxDiscount.getBigDecimal()));
+            maxDiscount.addModifiableListener(discountListener);
         } catch (OpenVPMSException exception) {
             ErrorHelper.show(exception);
         }
     }
 
     /**
-     * Recalculates the markup when the price is updated.
+     * Recalculates the markup when the price is updated. also adjust the maximum discount.
      */
     private void updateMarkup() {
         try {
@@ -143,10 +159,28 @@ public class ProductPriceEditor extends AbstractIMObjectEditor {
             property.removeModifiableListener(markupListener);
             property.setValue(calculateMarkup());
             property.addModifiableListener(markupListener);
+            Property maxDiscount = getProperty("maxDiscount");
+            maxDiscount.removeModifiableListener(discountListener);
+            maxDiscount.setValue(calculateDiscount(maxDiscount.getBigDecimal()));
+            maxDiscount.addModifiableListener(discountListener);
         } catch (OpenVPMSException exception) {
             ErrorHelper.show(exception);
         }
     }
+    
+    private void checkDiscount() {
+        try {
+            Property discount = getProperty("maxdiscount");
+            Property markup = getProperty("markup");
+            BigDecimal calcDiscount = calculateDiscount(markup.getBigDecimal());
+            if (calcDiscount.compareTo(discount.getBigDecimal()) < 0) {
+                //Todo Pop up error message Discount will allow selling lower than cost price.
+            }
+        } catch (OpenVPMSException exception) {
+            
+        }
+    }
+
 
     /**
      * Calculates the price using the following formula:
@@ -188,6 +222,16 @@ public class ProductPriceEditor extends AbstractIMObjectEditor {
             markup = rules.getMarkup(product, cost, price, practice);
         }
         return markup;
+    }
+    
+    private BigDecimal calculateDiscount(BigDecimal currentMaxDiscount) {
+        BigDecimal discount = BigDecimal.ZERO;
+        if (currentMaxDiscount.compareTo(BigDecimal.ZERO) == 0){
+            return currentMaxDiscount;
+        }
+        BigDecimal markup = getValue("markup");
+        discount = rules.calcMaxDiscount(markup);
+        return discount;
     }
 
     /**

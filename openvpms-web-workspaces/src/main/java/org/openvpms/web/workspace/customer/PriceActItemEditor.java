@@ -52,7 +52,10 @@ public abstract class PriceActItemEditor extends ActItemEditor {
      * The unit price.
      */
     private ProductPrice unitProductPrice;
-
+    /**
+     *  The Practice
+     */
+    private final Party practice;
 
     /**
      * Constructs a {@link PriceActItemEditor}.
@@ -68,6 +71,7 @@ public abstract class PriceActItemEditor extends ActItemEditor {
         Product product = getProduct();
         fixedEditor = new FixedPriceEditor(fixedPrice, getPricingLocation(), context);
         fixedEditor.setProduct(product);
+        practice = context.getContext().getPractice();
     }
 
     /**
@@ -168,7 +172,7 @@ public abstract class PriceActItemEditor extends ActItemEditor {
         Party customer = getCustomer();
         Party patient = getPatient();
         Product product = getProduct();
-
+        
         if (customer != null && product != null
             && !TypeHelper.isA(product, ProductArchetypes.TEMPLATE)) {
             BigDecimal fixedPrice = getFixedPrice();
@@ -182,9 +186,7 @@ public abstract class PriceActItemEditor extends ActItemEditor {
             }
             ProductPrice fixedProductPrice = getFixedProductPrice(product);
             ProductPrice unitProductPrice = getUnitProductPrice(product);
-            amount = rules.calculateDiscount(startTime, customer, patient, product, fixedPrice,
-                                             unitPrice, quantity, getMaxDiscount(fixedProductPrice),
-                                             getMaxDiscount(unitProductPrice));
+            amount = rules.calculateDiscount(startTime, practice, customer, patient, product, fixedPrice, unitPrice, quantity, getMaxDiscount(fixedProductPrice), getMaxDiscount(unitProductPrice), getCostPrice(unitProductPrice), getCostPrice(fixedProductPrice));
         }
         return amount;
     }

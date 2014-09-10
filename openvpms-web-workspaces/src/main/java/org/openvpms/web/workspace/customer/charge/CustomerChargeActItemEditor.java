@@ -16,6 +16,7 @@
 
 package org.openvpms.web.workspace.customer.charge;
 
+
 import nextapp.echo2.app.Component;
 import nextapp.echo2.app.Label;
 import org.apache.commons.lang.ObjectUtils;
@@ -247,11 +248,13 @@ public abstract class CustomerChargeActItemEditor extends PriceActItemEditor {
         taxRules = new CustomerTaxRules(context.getContext().getPractice(), ServiceHelper.getArchetypeService(),
                                         ServiceHelper.getLookupService());
         quantityListener = new ModifiableListener() {
+            @Override
             public void modified(Modifiable modifiable) {
                 updateMedicationQuantity();
             }
         };
         dispensingListener = new ModifiableListener() {
+            @Override
             public void modified(Modifiable modifiable) {
                 updateQuantity();
                 updateBatch();
@@ -275,8 +278,9 @@ public abstract class CustomerChargeActItemEditor extends PriceActItemEditor {
 
         // add a listener to update the tax amount when the total changes
         totalListener = new ModifiableListener() {
+            @Override
             public void modified(Modifiable modifiable) {
-                updateTaxAmount();
+                 updateTaxAmount();
             }
         };
         getProperty("total").addModifiableListener(totalListener);
@@ -284,6 +288,7 @@ public abstract class CustomerChargeActItemEditor extends PriceActItemEditor {
         // add a listener to update the discount amount when the quantity,
         // fixed or unit price changes.
         discountListener = new ModifiableListener() {
+            @Override
             public void modified(Modifiable modifiable) {
                 updateDiscount();
             }
@@ -294,6 +299,7 @@ public abstract class CustomerChargeActItemEditor extends PriceActItemEditor {
         getProperty("quantity").addModifiableListener(quantityListener);
 
         startTimeListener = new ModifiableListener() {
+            @Override
             public void modified(Modifiable modifiable) {
                 updatePatientActsStartTime();
             }
@@ -306,6 +312,27 @@ public abstract class CustomerChargeActItemEditor extends PriceActItemEditor {
                 updateMedicationBatch(getStockLocationRef());
             }
         };
+    }
+    /**
+     * Updates the discount and checks that the discount doesn't set it at 0 cost. If the user cancels the confirmation box the discount is reset to 0.
+     * 
+     */
+    @Override
+    protected void updateDiscount() {
+       super.updateDiscount();
+       BigDecimal discount = (BigDecimal) getProperty("discount").getValue();
+       BigDecimal fixedPrice = (BigDecimal) getProperty("fixedPrice").getValue();
+       BigDecimal unitPrice = (BigDecimal) getProperty("unitPrice").getValue();
+       if(fixedPrice.add(unitPrice).compareTo(discount) > 0) {
+           ConfirmationDialog dialog = new ConfirmationDialog(Messages.get("customer.charge.discount.title"),Messages.get("customer.charge.discount.message"));
+           dialog.addWindowPaneListener(new PopupDialogListener() {
+                    @Override
+                    public void onCancel() {
+                          getProperty("discount").setValue(BigDecimal.ZERO);
+                          super.onCancel();
+                    }
+                });
+       }
     }
 
     /**
@@ -533,6 +560,7 @@ public abstract class CustomerChargeActItemEditor extends PriceActItemEditor {
         if (clinician != null) {
             // add a listener to update the dispensing, investigation and reminder acts when the clinician changes
             clinician.addModifiableListener(new ModifiableListener() {
+                @Override
                 public void modified(Modifiable modifiable) {
                     updatePatientActsClinician();
                 }
@@ -610,7 +638,7 @@ public abstract class CustomerChargeActItemEditor extends PriceActItemEditor {
      * @throws ArchetypeServiceException for any archetype service error
      * @throws TaxRuleException          for any tax error
      */
-    protected void calculateTax() {
+    private void calculateTax() {
         Party customer = getCustomer();
         if (customer != null && getProductRef() != null) {
             FinancialAct act = (FinancialAct) getObject();
@@ -990,6 +1018,7 @@ public abstract class CustomerChargeActItemEditor extends PriceActItemEditor {
                                        final ActRelationshipCollectionEditor collection) {
         if (editorQueue != null) {
             editorQueue.queue(editor, skip, cancel, new EditorQueue.Listener() {
+                @Override
                 public void completed(boolean skipped, boolean cancelled) {
                     if (skipped || cancelled) {
                         collection.remove(editor.getObject());
