@@ -332,6 +332,31 @@ public abstract class CustomerChargeActItemEditor extends PriceActItemEditor {
     }
 
     /**
+     * Updates the discount and checks that the discount doesn't set it at 0
+     * cost. If the user cancels the confirmation box the discount is reset to
+     * 0.
+     *
+     */
+    @Override
+    protected void updateDiscount() {
+        super.updateDiscount();
+        BigDecimal discount = (BigDecimal) getProperty("discount").getValue();
+        BigDecimal fixedPrice = (BigDecimal) getProperty("fixedPrice").getValue();
+        BigDecimal unitPrice = (BigDecimal) getProperty("unitPrice").getValue();
+        if (fixedPrice.add(unitPrice).compareTo(discount) > 0) {
+            ConfirmationDialog dialog = new ConfirmationDialog(Messages.get("customer.charge.discount.title"), Messages.get("customer.charge.discount.message"));
+            dialog.addWindowPaneListener(new PopupDialogListener() {
+                @Override
+                public void onCancel() {
+                    getProperty("discount").setValue(BigDecimal.ZERO);
+                    super.onCancel();
+                }
+            });
+            editorQueue.queue(dialog);
+        }  
+    }
+
+    /**
      * Validates the object.
      *
      * @param validator the validator
@@ -548,6 +573,9 @@ public abstract class CustomerChargeActItemEditor extends PriceActItemEditor {
      */
     @Override
     protected void productModified(Product product) {
+        getProperty("fixedPrice").removeModifiableListener(discountListener);
+        getProperty("quantity").removeModifiableListener(discountListener);
+        getProperty("unitPrice").removeModifiableListener(discountListener);
         super.productModified(product);
 
         updatePatientMedication(product);
@@ -603,6 +631,9 @@ public abstract class CustomerChargeActItemEditor extends PriceActItemEditor {
             updateDiscount();
         }
         notifyProductListener(product);
+        getProperty("fixedPrice").addModifiableListener(discountListener);
+        getProperty("quantity").addModifiableListener(discountListener);
+        getProperty("unitPrice").addModifiableListener(discountListener);
     }
 
     /**
