@@ -71,7 +71,29 @@ public interface Mailer {
      * @return the to address
      */
     String getTo();
-
+    /**
+     * Set the Carbon Copy Address;
+     * @param cc 
+     */
+    void setCc(String cc);
+    /**
+     * Get the Carbon Copy address
+     * @return String
+     */
+    String getCc();
+    /**
+     * Set the blind carbon copy
+     * 
+     * @param bcc 
+     */
+    
+    void setBcc(String bcc);
+    /**
+     * Return the Blind Carbon Copy
+     * @return 
+     */
+    String getBcc();
+       
     /**
      * Sets the subject.
      *
@@ -90,8 +112,9 @@ public interface Mailer {
      * Sets the body.
      *
      * @param body the body
+     * @param html
      */
-    void setBody(String body);
+     void setBody(String body, boolean html);
 
     /**
      * Returns the body.

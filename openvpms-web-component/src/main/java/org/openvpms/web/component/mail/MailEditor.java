@@ -90,6 +90,7 @@ import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import org.openvpms.web.echo.text.RichTextArea;
 
 
 /**
@@ -562,11 +563,12 @@ public class MailEditor extends AbstractModifiable {
      * @param message the message property
      * @return a message editor
      */
-    protected TextArea createMessageEditor(Property message) {
-        TextArea result = BoundTextComponentFactory.createTextArea(message);
+    protected RichTextArea createMessageEditor(Property message) {
+        RichTextArea result = BoundTextComponentFactory.createRichTextArea(message);
         result.setStyleName("MailEditor.message");
         return result;
     }
+    
 
     /**
      * Invoked when the address or message updates. Refreshes the display and notifies listeners.
@@ -744,7 +746,7 @@ public class MailEditor extends AbstractModifiable {
         TextField subjectText = BoundTextComponentFactory.create(subject, 40);
         subjectText.setWidth(EXTENT);
 
-        TextArea messageArea = createMessageEditor(message);
+        RichTextArea messageArea = createMessageEditor(message);
 
         focus.add(subjectText);
         focus.add(messageArea);

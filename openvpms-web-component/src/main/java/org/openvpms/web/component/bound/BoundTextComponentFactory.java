@@ -26,6 +26,7 @@ import org.openvpms.web.echo.text.TextComponent;
 import org.openvpms.web.echo.text.TextField;
 
 import java.text.Format;
+import org.openvpms.web.echo.text.RichTextArea;
 
 
 /**
@@ -102,6 +103,18 @@ public class BoundTextComponentFactory extends TextComponentFactory {
      */
     public static TextArea createTextArea(Property property, int columns, int rows) {
         TextArea text = new BoundTextArea(property, columns, rows);
+        setDefaultStyle(text);
+        return text;
+    }
+    
+    public static RichTextArea createRichTextArea(Property property) {
+        RichTextArea text = new BoundRichTextArea(property);
+        setDefaultStyle(text);
+        return text;
+    }
+    
+    public static RichTextArea createRichTextArea(Property property, int columns, int rows) {
+        RichTextArea text = new BoundRichTextArea(property, columns, rows);
         setDefaultStyle(text);
         return text;
     }

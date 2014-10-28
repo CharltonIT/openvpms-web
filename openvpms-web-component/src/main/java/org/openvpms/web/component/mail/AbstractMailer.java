@@ -53,6 +53,10 @@ public abstract class AbstractMailer implements Mailer {
      * The to-address.
      */
     private String to;
+    
+    private String cc;
+    
+    private String bcc;
 
     /**
      * The email subject.
@@ -63,6 +67,8 @@ public abstract class AbstractMailer implements Mailer {
      * The email body.
      */
     private String body;
+    
+    private boolean html;
 
     /**
      * The attachments.
@@ -89,6 +95,7 @@ public abstract class AbstractMailer implements Mailer {
     public AbstractMailer(JavaMailSender sender, DocumentHandlers handlers) {
         this.sender = sender;
         this.handlers = handlers;
+        this.html = false;
     }
 
     /**
@@ -144,7 +151,22 @@ public abstract class AbstractMailer implements Mailer {
     public String getTo() {
         return to;
     }
-
+    
+    public void setCc(String cc){
+        this.cc = cc;
+    }
+    
+    public String getCc(){
+        return cc;
+    }
+    
+    public void setBcc(String bcc){
+        this.bcc = bcc;
+    }
+    
+    public String getBcc(){
+        return bcc;
+    }
     /**
      * Sets the subject.
      *
@@ -168,8 +190,14 @@ public abstract class AbstractMailer implements Mailer {
      *
      * @param body the body
      */
+    
     public void setBody(String body) {
+        setBody(body, false);
+    }
+    
+    public void setBody(String body, boolean html){
         this.body = body;
+        this.html = html;
     }
 
     /**
@@ -179,6 +207,10 @@ public abstract class AbstractMailer implements Mailer {
      */
     public String getBody() {
         return body;
+    }
+    
+    public boolean isHtml(){
+        return html;
     }
 
     /**
@@ -231,11 +263,18 @@ public abstract class AbstractMailer implements Mailer {
         helper.setFrom(getFrom(), getFromName());
         helper.setTo(address);
         helper.setSubject(getSubject());
+        if (getBcc() != null){
+          helper.setBcc(getBcc());
+        }
+        if (getCc() != null) {
+          helper.setCc(this.getCc());   
+        }
+
         if (body != null) {
-            helper.setText(body);
+          helper.setText(body,isHtml());
 
         } else {
-            helper.setText("");
+          helper.setText("");
         }
         for (Document attachment : attachments) {
             addAttachment(helper, attachment);
