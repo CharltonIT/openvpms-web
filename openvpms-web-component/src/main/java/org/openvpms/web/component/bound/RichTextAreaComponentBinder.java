@@ -17,10 +17,16 @@
 package org.openvpms.web.component.bound;
 
 import nextapp.echo2.app.Extent;
-import org.apache.commons.lang.StringUtils;
+import nextapp.echo2.app.event.ActionEvent;
+import nextapp.echo2.app.event.DocumentEvent;
+import org.apache.commons.lang.ObjectUtils;
+import org.openvpms.macro.Position;
+import org.openvpms.web.component.property.NoOpPropertyTransformer;
 import org.openvpms.web.component.property.Property;
 import org.openvpms.web.component.property.PropertyTransformer;
 import org.openvpms.web.component.property.StringPropertyTransformer;
+import org.openvpms.web.echo.event.ActionListener;
+import org.openvpms.web.echo.event.DocumentListener;
 import org.openvpms.web.echo.text.RichTextArea;
 
 
@@ -29,8 +35,14 @@ import org.openvpms.web.echo.text.RichTextArea;
  *
  * @author Tim Anderson
  */
-public class RichTextAreaComponentBinder extends TextComponentBinder {
+public class RichTextAreaComponentBinder extends Binder {
 
+    private final RichTextArea richTextArea;
+    
+     /**
+     * The document update listener.
+     */
+    private final DocumentListener listener;
     /**
      * Constructs a <tt>TextAreaComponentBinder</tt>.
      * <p/>
@@ -41,16 +53,21 @@ public class RichTextAreaComponentBinder extends TextComponentBinder {
      * @param component the component to bind
      */
     public RichTextAreaComponentBinder(RichTextArea component, Property property) {
-        super(component, property);
-        if (!StringUtils.isEmpty(property.getDescription())) {
-            component.setToolTipText(property.getDescription());
-        }
-        PropertyTransformer transformer = property.getTransformer();
-        if (!(transformer instanceof StringPropertyTransformer)) {
-            property.setTransformer(new StringPropertyTransformer(property, false));
-        } else {
-            ((StringPropertyTransformer) transformer).setTrim(false);
-        }
+        super(property, false);
+        this.richTextArea = component;
+        listener = new DocumentListener() {
+            public void onUpdate(DocumentEvent event) {
+                setProperty();
+            }
+        };
+        this.richTextArea.getDocument().addDocumentListener(listener);
+        ActionListener actionListener = new ActionListener() {
+            public void onAction(ActionEvent event) {
+                // no-op.
+            }
+        };
+        this.richTextArea.addActionListener(actionListener);
+        bind();
     }
 
     /**
@@ -68,5 +85,69 @@ public class RichTextAreaComponentBinder extends TextComponentBinder {
         this(component, property);
         component.setWidth(new Extent(columns, Extent.EX));
         component.setHeight(new Extent(rows, Extent.EM));
+    }
+    
+    @Override
+    protected void setFieldValue(Object value) {
+        richTextArea.getDocument().removeDocumentListener(listener);
+        String text = (value != null) ? value.toString() : null;
+        richTextArea.setText(text);
+        richTextArea.getDocument().addDocumentListener(listener);
+    }
+
+    @Override
+    protected Object getFieldValue() {
+        return richTextArea.getText();
+    }
+    /**
+     * Updates the property from the field.
+     * <p/>
+     * This moves the cursor position by the change in length, if a macro is expanded.
+     *
+     * @param property the property to update
+     * @return {@code true} if the property was updated
+     */
+    @Override
+    protected boolean setProperty(Property property) {
+        Object oldValue = getFieldValue();
+        Object value = oldValue;
+        Position position = null;
+        PropertyTransformer transformer = property.getTransformer();
+        PropertyTransformer oldTransformer = null;
+        if (value instanceof String && transformer instanceof StringPropertyTransformer) {
+            // want to track the cursor position changed by macro expansion, so need to invoke the transformer
+            // directly, prior to setting the (possibly) expanded value on the property.
+            // If the transformation, fails, just invoke setValue() with the original value so the property can
+            // trap the error.
+            try {
+                position = new Position(richTextArea.getCursorPosition());
+                value = ((StringPropertyTransformer) transformer).apply(value, position);
+
+                // don't want to run macro expansion again
+                oldTransformer = transformer;
+                property.setTransformer(NoOpPropertyTransformer.INSTANCE);
+            } catch (Throwable ignore) {
+                // the transformation has failed, so let the property handle the error
+                position = null;
+            }
+        }
+
+        boolean result;
+        try {
+            result = property.setValue(value);
+        } finally {
+            if (oldTransformer != null) {
+                // reset the transformer
+                property.setTransformer(oldTransformer);
+            }
+        }
+        String newValue = property.getString();
+        if (!ObjectUtils.equals(oldValue, newValue)) {
+            setField();
+            if (position != null && position.getOldPosition() != position.getNewPosition()) {
+                richTextArea.setCursorPosition(position.getNewPosition());
+            }
+        }
+        return result;
     }
 }

@@ -443,7 +443,7 @@ EchoTextComponent = Core.extend(
  * Static object/namespace for Text Component MessageProcessor
  * implementation.
  */
-EchoTextComponent.MessageProcessor = {
+EchoTextComponent.  MessageProcessor = {
 
     /**
      * MessageProcessor process() implementation
