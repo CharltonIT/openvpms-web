@@ -210,6 +210,11 @@ public abstract class CustomerChargeActItemEditor extends PriceActItemEditor {
     private static final String REMINDERS = "reminders";
 
     /**
+     * Pharmacy order nodes.
+     */
+    private static final String[] ORDER_NODES = {"receivedQuantity", "returnedQuantity"};
+
+    /**
      * Investigations node name.
      */
     private static final String INVESTIGATIONS = "investigations";
@@ -309,6 +314,60 @@ public abstract class CustomerChargeActItemEditor extends PriceActItemEditor {
     }
 
     /**
+     * Determines if an order has been placed for the item.
+     *
+     * @return {@code true} if an order has been placed
+     */
+    public boolean isOrdered() {
+        Property ordered = getProperty("ordered");
+        return ordered != null && ordered.getBoolean();
+    }
+
+    /**
+     * Returns the received quantity.
+     *
+     * @return the received quantity
+     */
+    public BigDecimal getReceivedQuantity() {
+        Property property = getProperty("receivedQuantity");
+        return property != null ? property.getBigDecimal(BigDecimal.ZERO) : BigDecimal.ZERO;
+    }
+
+    /**
+     * Sets the received quantity.
+     *
+     * @param quantity the received quantity
+     */
+    public void setReceivedQuantity(BigDecimal quantity) {
+        Property property = getProperty("receivedQuantity");
+        if (property != null) {
+            property.setValue(quantity);
+        }
+    }
+
+    /**
+     * Returns the returned quantity.
+     *
+     * @return the returned quantity
+     */
+    public BigDecimal getReturnedQuantity() {
+        Property property = getProperty("returnedQuantity");
+        return property != null ? property.getBigDecimal(BigDecimal.ZERO) : BigDecimal.ZERO;
+    }
+
+    /**
+     * Sets the returned quantity.
+     *
+     * @param quantity the returned quantity
+     */
+    public void setReturnedQuantity(BigDecimal quantity) {
+        Property property = getProperty("returnedQuantity");
+        if (property != null) {
+            property.setValue(quantity);
+        }
+    }
+
+    /**
      * Disposes of the editor.
      * <br/>
      * Once disposed, the behaviour of invoking any method is undefined.
@@ -321,14 +380,38 @@ public abstract class CustomerChargeActItemEditor extends PriceActItemEditor {
         }
 
         getProperty("total").removeModifiableListener(totalListener);
-
-        // add a listener to update the discount amount when the quantity,
-        // fixed or unit price changes.
         getProperty("fixedPrice").removeModifiableListener(discountListener);
         getProperty("quantity").removeModifiableListener(discountListener);
         getProperty("unitPrice").removeModifiableListener(discountListener);
         getProperty("quantity").removeModifiableListener(quantityListener);
         getProperty("startTime").removeModifiableListener(startTimeListener);
+    }
+
+    /**
+     * Updates the discount and checks that it isn't less than the total cost.
+     * <p/>
+     * If so, gives the user the opportunity to remove the discount.
+     */
+    @Override
+    protected void updateDiscount() {
+        super.updateDiscount();
+        BigDecimal discount = getProperty("discount").getBigDecimal();
+        BigDecimal quantity = getQuantity();
+        BigDecimal fixedCost = getProperty("fixedCost").getBigDecimal();
+        BigDecimal unitCost = getProperty("unitCost").getBigDecimal();
+        if (fixedCost.add(unitCost.multiply(quantity)).compareTo(discount) < 0) {
+            ConfirmationDialog dialog = new ConfirmationDialog(Messages.get("customer.charge.discount.title"),
+                                                               Messages.get("customer.charge.discount.message"),
+                                                               ConfirmationDialog.YES_NO);
+            dialog.addWindowPaneListener(new PopupDialogListener() {
+                @Override
+                public void onYes() {
+                    getProperty("discount").setValue(BigDecimal.ZERO);
+                    super.onYes();
+                }
+            });
+            editorQueue.queue(dialog);
+        }
     }
 
     /**
@@ -434,6 +517,16 @@ public abstract class CustomerChargeActItemEditor extends PriceActItemEditor {
         if (reminders != null) {
             reminders.getEditor().setRemoveHandler(context);
         }
+    }
+
+    /**
+     * Notifies the editor that the product has been ordered via a pharmacy.
+     * <p/>
+     * This refreshes the display to make the patient and product read-only, and display the received and returned
+     * nodes.
+     */
+    public void ordered() {
+        updateLayout(getProduct());
     }
 
     /**
@@ -548,14 +641,17 @@ public abstract class CustomerChargeActItemEditor extends PriceActItemEditor {
      */
     @Override
     protected void productModified(Product product) {
+        getProperty("fixedPrice").removeModifiableListener(discountListener);
+        getProperty("quantity").removeModifiableListener(discountListener);
+        getProperty("unitPrice").removeModifiableListener(discountListener);
         super.productModified(product);
+
+        // update the layout if nodes require filtering
+        updateLayout(product);
 
         updatePatientMedication(product);
         updateInvestigations(product);
         updateReminders(product);
-
-        // update the layout if nodes require filtering
-        updateLayout(product);
 
         Property discount = getProperty("discount");
         discount.setValue(BigDecimal.ZERO);
@@ -603,6 +699,9 @@ public abstract class CustomerChargeActItemEditor extends PriceActItemEditor {
             updateDiscount();
         }
         notifyProductListener(product);
+        getProperty("fixedPrice").addModifiableListener(discountListener);
+        getProperty("quantity").addModifiableListener(discountListener);
+        getProperty("unitPrice").addModifiableListener(discountListener);
     }
 
     /**
@@ -1128,9 +1227,9 @@ public abstract class CustomerChargeActItemEditor extends PriceActItemEditor {
         if (prescription != null) {
             if (promptForPrescription) {
                 Product product = getProduct();
-                ConfirmationDialog dialog = new ConfirmationDialog(Messages.get("customer.charge.prescription.title"),
-                                                                   Messages.format("customer.charge.prescription.message",
-                                                                                   product.getName()));
+                String title = Messages.get("customer.charge.prescription.title");
+                String message = Messages.format("customer.charge.prescription.message", product.getName());
+                ConfirmationDialog dialog = new ConfirmationDialog(title, message);
                 dialog.addWindowPaneListener(new PopupDialogListener() {
                     @Override
                     public void onOK() {
@@ -1313,6 +1412,12 @@ public abstract class CustomerChargeActItemEditor extends PriceActItemEditor {
             if (!filter.isEmpty()) {
                 result = new ArchetypeNodes().exclude(filter);
             }
+            if (isOrdered()) {
+                if (result == null) {
+                    result = new ArchetypeNodes();
+                }
+                result.simple(ORDER_NODES);
+            }
         }
         return result;
     }
@@ -1391,10 +1496,17 @@ public abstract class CustomerChargeActItemEditor extends PriceActItemEditor {
 
         @Override
         protected ComponentState createComponent(Property property, IMObject parent, LayoutContext context) {
-            ComponentState state = super.createComponent(property, parent, context);
-            if ("quantity".equals(property.getName())) {
+            ComponentState state;
+            String name = property.getName();
+            if ("quantity".equals(name)) {
+                state = super.createComponent(property, parent, context);
                 Component component = RowFactory.create(Styles.CELL_SPACING, state.getComponent(), sellingUnits);
                 state = new ComponentState(component, property);
+            } else if (("patient".equals(name) || "product".equals(name)) && isOrdered()) {
+                // the item has been ordered via an HL7 pharmacy. The patient and product cannot be changed
+                state = super.createComponent(createReadOnly(property), parent, context);
+            } else {
+                state = super.createComponent(property, parent, context);
             }
             return state;
         }
