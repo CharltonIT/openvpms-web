@@ -25,6 +25,7 @@
         <relativePath>../pom.xml</relativePath>
     </parent>
     <modelVersion>4.0.0</modelVersion>
+
     <artifactId>openvpms-web-app</artifactId>
     <packaging>war</packaging>
 
@@ -109,7 +110,6 @@
                 <!-- copies the messages*.properties files to classes/localisation -->
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-resources-plugin</artifactId>
-                <version>2.5</version>
                 <executions>
                     <execution>
                         <id>unpack</id>
@@ -167,7 +167,6 @@
                 <!-- configure jetty with ssl support -->
                 <groupId>org.mortbay.jetty</groupId>
                 <artifactId>jetty-maven-plugin</artifactId>
-                <version>8.1.14.v20131031</version>
                 <configuration>
                     <webAppSourceDirectory>${basedir}/src/webapp</webAppSourceDirectory>
                     <webAppConfig>
@@ -221,4 +220,5 @@
         <jetty.port>8080</jetty.port>
         <jetty.sslport>8443</jetty.sslport>
     </properties>
+
 </project>

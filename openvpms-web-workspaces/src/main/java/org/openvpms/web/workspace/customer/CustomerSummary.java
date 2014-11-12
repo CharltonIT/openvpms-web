@@ -136,7 +136,7 @@ public class CustomerSummary extends PartySummary {
             Label unbilledTitle = create("customer.account.unbilled");
             BigDecimal unbilled = accountRules.getUnbilledAmount(party);
             Label unbilledValue = create(unbilled);
-        
+
             Label effectiveTitle = create("customer.account.effective");
             BigDecimal effective = balance.add(unbilled);
             Label effectiveValue = create(effective);
@@ -189,7 +189,7 @@ public class CustomerSummary extends PartySummary {
         }
         return result;
     }
-    
+
     /**
      * Returns outstanding alerts for a party.
      *
@@ -202,6 +202,7 @@ public class CustomerSummary extends PartySummary {
         query.setStatus(ActStatus.IN_PROGRESS);
         return query.query();
     }
+
     /**
      * Returns a button to launch an {@link MailDialog} for a customer.
      *
