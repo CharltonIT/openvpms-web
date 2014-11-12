@@ -1,13 +1,3 @@
-/target
+*/target/*
 /build.properties
-/*.iml
-/*.ipr
-/*.idea
-/openvpms-web-app/target/
-/openvpms-web-workspaces/target
-/openvpms-macro/target
-/openvpms-web-component/target
-/openvpms-web-echo/target
-/openvpms-web-resource/target
-/openvpms-web-app/openvpms*.log
-nb-configuration.xml
+*/openvpms*.log
