@@ -60,7 +60,7 @@ public class EchoAuthenticationEntryPoint
     @Override
     public void commence(HttpServletRequest request, HttpServletResponse response,
                          AuthenticationException authException) throws IOException, ServletException {
-        if (ServletHelper.isEchoRequest(request)) {
+         if (ServletHelper.isEchoRequest(request)) {
             ServletHelper.forceExpiry(response);
         } else {
             super.commence(request, response, authException);

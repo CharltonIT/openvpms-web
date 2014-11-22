@@ -302,7 +302,7 @@ public class MailDialog extends PopupDialog {
                 mailer.setFromName(editor.getFromName());
                 mailer.setTo(editor.getTo());
                 mailer.setSubject(editor.getSubject());
-                mailer.setBody(editor.getMessage());
+                mailer.setBody(editor.getMessage(),true);
                 for (IMObjectReference attachment : editor.getAttachments()) {
                     Document document = (Document) IMObjectHelper.getObject(attachment, context);
                     if (document != null) {

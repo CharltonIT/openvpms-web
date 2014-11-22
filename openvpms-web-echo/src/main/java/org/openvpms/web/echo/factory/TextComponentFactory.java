@@ -18,6 +18,7 @@ package org.openvpms.web.echo.factory;
 
 import nextapp.echo2.app.Extent;
 import nextapp.echo2.app.PasswordField;
+import org.openvpms.web.echo.text.RichTextArea;
 import org.openvpms.web.echo.text.TextArea;
 import org.openvpms.web.echo.text.TextComponent;
 import org.openvpms.web.echo.text.TextDocument;
@@ -84,6 +85,13 @@ public class TextComponentFactory extends ComponentFactory {
         setDefaultStyle(text);
         return text;
     }
+    
+    public static RichTextArea createRichTextArea(int columns, int rows){
+        
+        RichTextArea richText = new RichTextArea(new TextDocument(), null, columns, rows);
+        setDefaultStyle(richText);
+        return richText;
+    }
 
     /**
      * Create a new password field.
@@ -137,7 +145,7 @@ public class TextComponentFactory extends ComponentFactory {
         result.setText(value);
         return result;
     }
-
+    
     /**
      * Create a new password field.
      *

@@ -155,7 +155,7 @@ public abstract class TextComponentPeer
     /**
      * A <code>PartialUpdateParticipant</code> to update the cursor position of a text component.
      */
-    private class CursorPositionUpdate
+    protected class CursorPositionUpdate
             implements PartialUpdateParticipant {
 
         /**
@@ -182,7 +182,7 @@ public abstract class TextComponentPeer
             Object property = textComponent.getProperty(PROPERTY_CURSOR_POSITION);
             itemElement.setAttribute("cursorPosition", property != null ? property.toString() : "0");
             itemizedUpdateElement.appendChild(itemElement);
-        }
+        } 
     }
 
     private PartialUpdateManager partialUpdateManager;
