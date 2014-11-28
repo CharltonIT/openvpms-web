@@ -63,7 +63,6 @@ public class DefaultCollectionPropertyEditorTestCase
         assertTrue(set.contains(ContactArchetypes.LOCATION));
         assertTrue(set.contains(ContactArchetypes.PHONE));
         assertTrue(set.contains(ContactArchetypes.EMAIL));
-        assertTrue(set.contains(ContactArchetypes.FAX));
     }
 
     /**
