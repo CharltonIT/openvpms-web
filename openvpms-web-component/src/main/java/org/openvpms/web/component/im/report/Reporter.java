@@ -19,18 +19,9 @@ package org.openvpms.web.component.im.report;
 import org.openvpms.component.business.domain.im.document.Document;
 import org.openvpms.component.business.service.archetype.ArchetypeServiceException;
 import org.openvpms.component.system.common.exception.OpenVPMSException;
-import org.openvpms.report.DocFormats;
-import org.openvpms.report.IMReport;
-import org.openvpms.report.ParameterType;
-import org.openvpms.report.PrintProperties;
-import org.openvpms.report.ReportException;
+import org.openvpms.report.*;
 
-import java.util.Arrays;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 
 /**
@@ -138,7 +129,7 @@ public abstract class Reporter<T> {
             type = report.getDefaultMimeType();
         }
         Map<String, Object> map = new HashMap<String, Object>(getParameters(email));
-        Document document = report.generate(getObjects().iterator(), map, fields, type);
+        Document document = report.generate(getObjects(), map, fields, type);
         setName(document);
         return document;
     }
@@ -149,7 +140,7 @@ public abstract class Reporter<T> {
      * @param objects    the objects to print
      * @param properties the print properties
      */
-    public void print(Iterator<T> objects, PrintProperties properties) {
+    public void print(Iterable<T> objects, PrintProperties properties) {
         getReport().print(objects, getParameters(false), fields, properties);
     }
 
