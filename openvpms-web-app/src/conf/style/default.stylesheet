@@ -13,7 +13,7 @@
   ~ for the specific language governing rights and limitations under the
   ~ License.
   ~
-  ~ Copyright 2014 (C) OpenVPMS Ltd. All Rights Reserved.
+  ~ Copyright 2015 (C) OpenVPMS Ltd. All Rights Reserved.
   -->
 
 <stylesheet>
@@ -462,6 +462,7 @@
     <style name="VisitEditor.TabbedPane" type="echopointng.TabbedPane">
         <properties>
             <property name="height" value="${VisitEditor.TabbedPane.height}"/>
+            <property name="scrollBarPolicy" value="AUTO"/>
         </properties>
     </style>
 
@@ -786,6 +787,14 @@
         <properties>
             <property name="width" value="${MailDialog.width}"/>
             <property name="height" value="${MailDialog.height}"/>
+        </properties>
+    </style>
+
+    <style name="AddressBook" base-name="PopupWindow"
+           type="nextapp.echo2.app.WindowPane">
+        <properties>
+            <property name="width" value="${dialog.medium.width}"/>
+            <property name="height" value="${dialog.medium.height}"/>
         </properties>
     </style>
 
@@ -1213,6 +1222,13 @@
            type="nextapp.echo2.app.WindowPane">
         <properties>
             <property name="titleBackground" value="#ff0000"/>
+        </properties>
+    </style>
+
+    <style name="LockScreenDialog" base-name="PopupWindow" type="nextapp.echo2.app.WindowPane">
+        <properties>
+            <property name="width" value="${LockScreenDialog.width}"/>
+            <property name="height" value="${LockScreenDialog.height}"/>
         </properties>
     </style>
 

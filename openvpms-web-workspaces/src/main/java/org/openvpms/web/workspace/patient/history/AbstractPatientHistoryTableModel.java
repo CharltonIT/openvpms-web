@@ -11,7 +11,7 @@
  * for the specific language governing rights and limitations under the
  * License.
  *
- * Copyright 2014 (C) OpenVPMS Ltd. All Rights Reserved.
+ * Copyright 2015 (C) OpenVPMS Ltd. All Rights Reserved.
  */
 
 package org.openvpms.web.workspace.patient.history;
@@ -56,10 +56,10 @@ import org.openvpms.web.component.im.util.IMObjectHelper;
 import org.openvpms.web.component.im.util.LookupNameHelper;
 import org.openvpms.web.component.im.view.IMObjectReferenceViewer;
 import org.openvpms.web.component.util.ErrorHelper;
+import org.openvpms.web.component.util.StyleSheetHelper;
 import org.openvpms.web.echo.factory.ComponentFactory;
 import org.openvpms.web.echo.factory.RowFactory;
 import org.openvpms.web.echo.style.Styles;
-import org.openvpms.web.echo.style.UserStyleSheets;
 import org.openvpms.web.resource.i18n.Messages;
 import org.openvpms.web.resource.i18n.format.DateFormatter;
 import org.openvpms.web.system.ServiceHelper;
@@ -143,6 +143,11 @@ public abstract class AbstractPatientHistoryTableModel extends AbstractIMObjectT
     private int clinicianWidth = -1;
 
     /**
+     * Helper functions.
+     */
+    private final ArchetypeServiceFunctions functions;
+
+    /**
      * Default fixed column width, in pixels.
      */
     private static final int DEFAULT_WIDTH = 150;
@@ -187,6 +192,7 @@ public abstract class AbstractPatientHistoryTableModel extends AbstractIMObjectT
             IMObjectBean bean = new IMObjectBean(practice);
             showClinician = bean.getBoolean("showClinicianInHistoryItems");
         }
+        functions = ServiceHelper.getBean(ArchetypeServiceFunctions.class);
         initStyles();
     }
 
@@ -374,7 +380,7 @@ public abstract class AbstractPatientHistoryTableModel extends AbstractIMObjectT
         if (StringUtils.isEmpty(reason)) {
             reason = Messages.get("patient.record.summary.reason.none");
         }
-        String status = ArchetypeServiceFunctions.lookup(act, "status");
+        String status = functions.lookup(act, "status");
         clinician = getClinician(bean, row);
         String age = getAge(bean);
         return Messages.format("patient.record.summary.title", reason, clinician, status, age);
@@ -753,13 +759,9 @@ public abstract class AbstractPatientHistoryTableModel extends AbstractIMObjectT
      * Initialises the typePadding, typeWidth, and clinicianWidth style properties.
      */
     private void initStyles() {
-        UserStyleSheets styleSheets = ServiceHelper.getBean(UserStyleSheets.class);
-        org.openvpms.web.echo.style.Style style = styleSheets.getStyle();
-        if (style != null) {
-            typePadding = style.getProperty("padding.large", 10);
-            typeWidth = style.getProperty("history.type.width", DEFAULT_WIDTH);
-            clinicianWidth = style.getProperty("history.clinician.width", DEFAULT_WIDTH);
-        }
+        typePadding = StyleSheetHelper.getProperty("padding.large", 10);
+        typeWidth = StyleSheetHelper.getProperty("history.type.width", DEFAULT_WIDTH);
+        clinicianWidth = StyleSheetHelper.getProperty("history.clinician.width", DEFAULT_WIDTH);
         if (typePadding <= 0) {
             typePadding = 10;
         }

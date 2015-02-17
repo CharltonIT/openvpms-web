@@ -11,7 +11,7 @@
  * for the specific language governing rights and limitations under the
  * License.
  *
- * Copyright 2014 (C) OpenVPMS Ltd. All Rights Reserved.
+ * Copyright 2015 (C) OpenVPMS Ltd. All Rights Reserved.
  */
 
 package org.openvpms.web.component.im.edit.act;
@@ -19,18 +19,18 @@ package org.openvpms.web.component.im.edit.act;
 import org.apache.commons.collections4.CollectionUtils;
 import org.apache.commons.collections4.Predicate;
 import org.openvpms.archetype.rules.act.ActCopyHandler;
+import org.openvpms.archetype.rules.patient.PatientRules;
 import org.openvpms.archetype.rules.product.ProductArchetypes;
 import org.openvpms.component.business.domain.im.act.Act;
 import org.openvpms.component.business.domain.im.act.ActRelationship;
 import org.openvpms.component.business.domain.im.archetype.descriptor.ArchetypeDescriptor;
 import org.openvpms.component.business.domain.im.archetype.descriptor.NodeDescriptor;
-import org.openvpms.component.business.domain.im.common.EntityRelationship;
 import org.openvpms.component.business.domain.im.common.IMObject;
 import org.openvpms.component.business.domain.im.common.IMObjectReference;
 import org.openvpms.component.business.domain.im.common.Participation;
+import org.openvpms.component.business.domain.im.party.Party;
 import org.openvpms.component.business.domain.im.product.Product;
 import org.openvpms.component.business.service.archetype.IArchetypeService;
-import org.openvpms.component.business.service.archetype.helper.IMObjectBean;
 import org.openvpms.component.business.service.archetype.helper.IMObjectCopier;
 import org.openvpms.component.business.service.archetype.helper.TypeHelper;
 import org.openvpms.web.component.im.edit.CollectionPropertyEditor;
@@ -43,9 +43,11 @@ import org.openvpms.web.component.im.relationship.MultipleRelationshipCollection
 import org.openvpms.web.component.im.view.ReadOnlyComponentFactory;
 import org.openvpms.web.component.property.CollectionProperty;
 import org.openvpms.web.component.property.Validator;
+import org.openvpms.web.system.ServiceHelper;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
@@ -389,15 +391,11 @@ public class ActRelationshipCollectionEditor extends MultipleRelationshipCollect
         ActRelationshipCollectionPropertyEditor collection = getEditor();
 
         IMObjectCopier copier = new IMObjectCopier(new ActItemCopyHandler());
-        IMObjectBean bean = new IMObjectBean(template);
-        List<IMObject> values = bean.getValues("includes");
+        Collection<TemplateProduct> includes = getProductIncludes(template, editor.getPatient());
         Act act = (Act) editor.getObject();
         Act copy = act; // replace the existing act with the first
         Date startTime = act.getActivityStartTime();
-        for (IMObject value : values) {
-            EntityRelationship relationship = (EntityRelationship) value;
-            IMObjectReference product = relationship.getTarget();
-
+        for (TemplateProduct include : includes) {
             if (copy == null) {
                 // copy the act, and associate the product
                 List<IMObject> objects = copier.apply(act);
@@ -413,15 +411,7 @@ public class ActRelationshipCollectionEditor extends MultipleRelationshipCollect
                 // create the component - must do this to ensure that the product editor is created
                 editor.getComponent();
             }
-            editor.setProductRef(product);
-
-            IMObjectBean relationshipBean = new IMObjectBean(relationship);
-            if (relationshipBean.hasNode("includeQty")) {
-                BigDecimal quantity = relationshipBean.getBigDecimal("includeQty");
-                if (quantity != null) {
-                    editor.setQuantity(quantity);
-                }
-            }
+            setTemplateProduct(editor, include);
 
             collection.add(copy);
             collection.setEditor(copy, editor);
@@ -430,6 +420,38 @@ public class ActRelationshipCollectionEditor extends MultipleRelationshipCollect
             copy = null;
         }
         return result;
+    }
+
+    /**
+     * Populates an editor from a template product.
+     *
+     * @param editor  the editor
+     * @param product the template product
+     */
+    protected void setTemplateProduct(ActItemEditor editor, TemplateProduct product) {
+        editor.setProduct(product.getProduct());
+        editor.setQuantity(product.getHighQuantity());
+        if (product.getZeroPrice()) {
+            editor.setFixedPrice(BigDecimal.ZERO);
+            editor.setUnitPrice(BigDecimal.ZERO);
+        }
+    }
+
+    /**
+     * Expands a product template.
+     *
+     * @param template the template to expand
+     * @param patient  the patient. May be {@code null}
+     * @return a collection of included products
+     */
+    protected Collection<TemplateProduct> getProductIncludes(Product template, Party patient) {
+        BigDecimal weight = BigDecimal.ZERO;
+        if (patient != null) {
+            PatientRules rules = ServiceHelper.getBean(PatientRules.class);
+            weight = rules.getWeight(patient);
+        }
+        ProductTemplateExpander expander = new ProductTemplateExpander();
+        return expander.expand(template, weight, getContext().getCache());
     }
 
     /**
