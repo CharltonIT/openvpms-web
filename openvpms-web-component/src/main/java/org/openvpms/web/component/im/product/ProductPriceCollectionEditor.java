@@ -11,13 +11,14 @@
  * for the specific language governing rights and limitations under the
  * License.
  *
- * Copyright 2014 (C) OpenVPMS Ltd. All Rights Reserved.
+ * Copyright 2015 (C) OpenVPMS Ltd. All Rights Reserved.
  */
 
 package org.openvpms.web.component.im.product;
 
 import nextapp.echo2.app.Row;
 import nextapp.echo2.app.event.ActionEvent;
+import org.openvpms.archetype.rules.product.PricingGroup;
 import org.openvpms.component.business.domain.im.common.IMObject;
 import org.openvpms.component.business.domain.im.product.ProductPrice;
 import org.openvpms.component.business.service.archetype.helper.IMObjectBean;
@@ -75,8 +76,6 @@ public class ProductPriceCollectionEditor extends IMObjectTableCollectionEditor 
             filter.setListener(new ActionListener() {
                 @Override
                 public void onAction(ActionEvent event) {
-                    ProductPriceTableModel model = (ProductPriceTableModel) getTable().getModel().getModel();
-                    model.setShowPricingGroups(filter.showAll());
                     populateTable();
                 }
             });
@@ -87,16 +86,17 @@ public class ProductPriceCollectionEditor extends IMObjectTableCollectionEditor 
     /**
      * Creates a new price, subject to a short name being selected.
      * <p/>
-     * If there is a pricing location selected, this will be added to the price.
+     * If there is a pricing group selected, this will be added to the price.
      *
      * @return a new price, or {@code null} if the price can't be created
      */
     @Override
     public IMObject create() {
         IMObject object = super.create();
-        if (object != null && filter.getPricingGroup() != null) {
+        PricingGroup pricingGroup = filter.getPricingGroup();
+        if (object != null && pricingGroup != null && pricingGroup.getGroup() != null) {
             IMObjectBean bean = new IMObjectBean(object);
-            bean.addValue("pricingGroups", filter.getPricingGroup().getGroup());
+            bean.addValue("pricingGroups", pricingGroup.getGroup());
         }
         return object;
     }
@@ -123,6 +123,10 @@ public class ProductPriceCollectionEditor extends IMObjectTableCollectionEditor 
     protected IMTableModel<IMObject> createTableModel(LayoutContext context) {
         context = new DefaultLayoutContext(context);
         context.setComponentFactory(new TableComponentFactory(context));
-        return new ProductPriceTableModel(getProperty().getArchetypeRange(), context);
+        ProductPriceTableModel model = new ProductPriceTableModel(getProperty().getArchetypeRange(), context);
+        if (filter.needsFilter()) {
+            model.setShowPricingGroups(true);
+        }
+        return model;
     }
 }

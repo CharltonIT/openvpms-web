@@ -11,7 +11,7 @@
  * for the specific language governing rights and limitations under the
  * License.
  *
- * Copyright 2014 (C) OpenVPMS Ltd. All Rights Reserved.
+ * Copyright 2015 (C) OpenVPMS Ltd. All Rights Reserved.
  */
 
 package org.openvpms.web.workspace.patient.visit;
@@ -38,9 +38,8 @@ import org.openvpms.web.component.workspace.CRUDWindow;
 import org.openvpms.web.echo.button.ButtonSet;
 import org.openvpms.web.echo.factory.ColumnFactory;
 import org.openvpms.web.echo.help.HelpContext;
-import org.openvpms.web.echo.message.InformationMessage;
-import org.openvpms.web.resource.i18n.Messages;
 import org.openvpms.web.system.ServiceHelper;
+import org.openvpms.web.workspace.customer.charge.OrderChargeManager;
 import org.openvpms.web.workspace.customer.order.OrderCharger;
 import org.openvpms.web.workspace.patient.charge.VisitChargeEditor;
 import org.springframework.transaction.TransactionStatus;
@@ -80,9 +79,9 @@ public class VisitChargeCRUDWindow extends AbstractCRUDWindow<FinancialAct> impl
     private VisitChargeEditor editor;
 
     /**
-     * Customer order charger.
+     * The order charge manager.
      */
-    private final OrderCharger orderCharger;
+    private final OrderChargeManager manager;
 
     /**
      * Determines if the charge is posted.
@@ -100,9 +99,9 @@ public class VisitChargeCRUDWindow extends AbstractCRUDWindow<FinancialAct> impl
     private int id;
 
     /**
-     * The current order message.
+     * Determines if orders should be automatically charged.
      */
-    private Component message;
+    private boolean autoChargeOrders = true;
 
 
     /**
@@ -117,8 +116,9 @@ public class VisitChargeCRUDWindow extends AbstractCRUDWindow<FinancialAct> impl
               context, help);
         this.event = event;
         OrderRules rules = ServiceHelper.getBean(OrderRules.class);
-        orderCharger = new OrderCharger(context.getCustomer(), context.getPatient(), rules, context,
-                                        help.subtopic("order"));
+        OrderCharger charger = new OrderCharger(context.getCustomer(), context.getPatient(), rules, context,
+                                                help.subtopic("order"));
+        manager = new OrderChargeManager(charger, container);
     }
 
     /**
@@ -159,6 +159,7 @@ public class VisitChargeCRUDWindow extends AbstractCRUDWindow<FinancialAct> impl
             } else {
                 HelpContext edit = createEditTopic(object);
                 editor = createVisitChargeEditor(object, event, createLayoutContext(edit));
+                manager.clear();
                 container.add(editor.getComponent());
             }
         } else {
@@ -193,8 +194,12 @@ public class VisitChargeCRUDWindow extends AbstractCRUDWindow<FinancialAct> impl
      */
     @Override
     public void show() {
-        checkOrders();
         if (editor != null) {
+            if (autoChargeOrders) {
+                manager.charge(editor);
+            } else {
+                manager.check();
+            }
             editor.getFocusGroup().setFocus();
         }
     }
@@ -212,11 +217,11 @@ public class VisitChargeCRUDWindow extends AbstractCRUDWindow<FinancialAct> impl
                 result = SaveHelper.save(editor, new TransactionCallback<Boolean>() {
                     @Override
                     public Boolean doInTransaction(TransactionStatus status) {
-                        return orderCharger.save();
+                        return manager.save();
                     }
                 });
                 if (result) {
-                    orderCharger.clear();
+                    manager.clear();
                 }
                 posted = ActStatus.POSTED.equals(getObject().getStatus());
             } else {
@@ -226,7 +231,7 @@ public class VisitChargeCRUDWindow extends AbstractCRUDWindow<FinancialAct> impl
         } else {
             result = true;
         }
-        checkOrders();
+        manager.check();
         return result;
     }
 
@@ -273,13 +278,26 @@ public class VisitChargeCRUDWindow extends AbstractCRUDWindow<FinancialAct> impl
      */
     public void chargeOrders() {
         if (!posted) {
-            orderCharger.charge(editor, new OrderCharger.CompletionListener() {
-                @Override
-                public void completed() {
-                    checkOrders();
-                }
-            });
+            manager.chargeSelected(editor);
         }
+    }
+
+    /**
+     * Determines if customer orders should automatically be charged when the window is displayed.
+     *
+     * @param charge if {@code true}, automatically charge customer orders
+     */
+    public void setAutoChargeOrders(boolean charge) {
+        autoChargeOrders = charge;
+    }
+
+    /**
+     * Determines if customer orders should automatically be charged when the window is displayed.
+     *
+     * @return {@code true} if customer orders will be automatically charged
+     */
+    public boolean isAutoChargeOrders() {
+        return autoChargeOrders;
     }
 
     /**
@@ -330,21 +348,6 @@ public class VisitChargeCRUDWindow extends AbstractCRUDWindow<FinancialAct> impl
             buttons.setEnabled(IN_PROGRESS_ID, enable);
             buttons.setEnabled(COMPLETED_ID, enable);
             buttons.setEnabled(INVOICE_ORDERS_ID, enable);
-        }
-    }
-
-    /**
-     * Determines if there are any pending orders, displaying a message if there are.
-     */
-    private void checkOrders() {
-        if (message != null) {
-            container.remove(message);
-            message = null;
-        }
-        if (orderCharger.hasOrders()) {
-            message = new InformationMessage(Messages.format("customer.order.pending",
-                                                             orderCharger.getCustomer().getName()));
-            container.add(message, 0);
         }
     }
 
